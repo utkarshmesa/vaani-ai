@@ -1,0 +1,21 @@
+# dependencies / build
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets — never commit
+.env
+.env.local
+.env.*.local
+
+# confidential source material — kept local, not published
+Docs/pricing.md
+Docs/*.pdf
+Problem Statement/
+
+# misc
+.DS_Store
+.vercel
