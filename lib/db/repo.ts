@@ -53,8 +53,11 @@ export interface Repo {
   getLeadByCallId(callId: string): Promise<LeadRow | null>;
   insertLead(row: LeadInsert): Promise<LeadRow>;
   updateLead(id: string, patch: LeadPatch): Promise<LeadRow>;
-  /** Apply the patch only if every field in `whenNull` is still null. Returns the updated row, or null if not applied. */
-  updateLeadIf(id: string, patch: LeadPatch, whenNull: (keyof LeadRow)[]): Promise<LeadRow | null>;
+  /**
+   * Apply the patch only if every field in `whenNull` is still null and every field in `whenEquals` still has that
+   * value (an atomic compare-and-set). Returns the updated row, or null if not applied.
+   */
+  updateLeadIf(id: string, patch: LeadPatch, whenNull: (keyof LeadRow)[], whenEquals?: Partial<LeadRow>): Promise<LeadRow | null>;
   listLeads(q?: ListLeadsQuery): Promise<LeadRow[]>;
 
   insertEvent(e: EventInsert): Promise<EventRow>;

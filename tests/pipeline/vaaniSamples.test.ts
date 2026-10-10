@@ -60,3 +60,40 @@ describe('real Vaani webhook shapes', () => {
     ]);
   });
 });
+
+describe('real inbound payloads (WebRTC test call, 2026-10-10)', () => {
+  it('call_duration arrives in seconds (9.02), not milliseconds as documented — stored as 9020 ms', async () => {
+    const p = loadFixture('t17');
+    p.data.call_duration = 9.02;
+    setNow(p.timestamp);
+    await processEvent(p, { lookupDelayMs: 0 });
+    expect((await getRepo().getCall(p.call_id))?.duration_ms).toBe(9020);
+  });
+
+  it('the documented millisecond form still works', async () => {
+    const p = loadFixture('t17'); // 72140.6 ms
+    setNow(p.timestamp);
+    await processEvent(p, { lookupDelayMs: 0 });
+    expect((await getRepo().getCall(p.call_id))?.duration_ms).toBe(72141);
+  });
+
+  it('a 12-minute call reported in seconds (720) is 720000 ms', async () => {
+    const p = loadFixture('t01');
+    p.data.call_duration = 720;
+    setNow(p.timestamp);
+    await processEvent(p, { lookupDelayMs: 0 });
+    expect((await getRepo().getCall(p.call_id))?.duration_ms).toBe(720_000);
+  });
+
+  it("takes the caller's number from call_started's top-level `from`, ignoring non-numbers like web-user", async () => {
+    const started = (from: string) => ({
+      to: '+912000000000', from, event: 'call_started', timestamp: '2026-10-10T18:32:19.767184+00:00',
+      data: { caller: from, call_type: 'Inbound', room_name: 'webrtc-1', agent_name: 'Aangan Studio enquiries' },
+    });
+    await processEvent(started('web-user'));
+    expect(await getRepo().listEvents({ callId: 'webrtc-1', type: 'caller_number' })).toHaveLength(0);
+    await processEvent(started('+91 98123 45678'));
+    const ev = await getRepo().listEvents({ callId: 'webrtc-1', type: 'caller_number' });
+    expect(ev[0].meta).toMatchObject({ phone_number: '+91 98123 45678' });
+  });
+});

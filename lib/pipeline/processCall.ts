@@ -5,9 +5,9 @@ import type { Json, LeadOutcome } from '@/lib/db/types';
 import { mapEntities } from '@/lib/mapEntities';
 import { scanAgentLines } from '@/lib/priceScan';
 import { callerFromCallStarted, lookupCallInfo } from './lookupCallInfo';
-import { isYes, numberField, textField, type VaaniEvent } from './payload';
+import { durationMs, isYes, textField, type VaaniEvent } from './payload';
 import { routeLead } from './route';
-import { lastTransferFailed } from './transfers';
+import { lastTransferFailed, upgradeIfTransferFailed } from './transfers';
 
 export interface ProcessOptions {
   /** Call-history attempts for calls that trigger an urgent email (they need the caller's number). Default 4. */
@@ -34,12 +34,12 @@ export async function processCall(ev: VaaniEvent & { callId: string }, raw: unkn
   const existing = await repo.getCall(callId);
   if (existing?.processed_at) return { kind: 'call', status: 'duplicate', callId };
 
-  const duration = numberField(d, 'call_duration');
+  const duration = durationMs(d);
   await repo.upsertCall({
     call_id: callId,
     received_at: existing?.received_at ?? ev.timestamp ?? now().toISOString(),
     raw_payload: raw as Json,
-    duration_ms: duration === null ? null : Math.round(duration),
+    duration_ms: duration,
     transcript: textField(d, 'transcript'),
     summary: textField(d, 'summary'),
     entities: (d.entities ?? null) as Json,
@@ -98,6 +98,10 @@ export async function processCall(ev: VaaniEvent & { callId: string }, raw: unkn
 
     // e. Done
     await repo.updateCall(callId, { processed_at: now().toISOString(), processing_error: null });
+    // A transfer failure may have arrived while this call was being processed (the transfer handler skips
+    // unprocessed calls), so check once more now that processed_at is set.
+    await upgradeIfTransferFailed(callId);
+    lead = (await repo.getLeadByCallId(callId)) ?? lead;
     return { kind: 'call', status: 'processed', callId, outcome: lead.outcome };
   } catch (err) {
     const message = String((err as Error)?.stack ?? err).slice(0, 2000);

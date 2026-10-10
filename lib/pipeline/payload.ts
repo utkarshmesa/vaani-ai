@@ -9,6 +9,8 @@ export interface VaaniEvent {
   /** ISO timestamp from the payload, if valid */
   timestamp: string | null;
   data: Record<string, unknown>;
+  /** The raw top-level object (real inbound call_started puts `from` / `to` here). */
+  top: Record<string, unknown>;
 }
 
 const isObject = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v);
@@ -23,7 +25,26 @@ export function readEvent(body: unknown): VaaniEvent {
     callId: str(top.call_id) ?? str(data.call_id) ?? str(top.room_name) ?? str(data.room_name),
     timestamp: ts && !Number.isNaN(new Date(ts).getTime()) ? new Date(ts).toISOString() : null,
     data,
+    top,
   };
+}
+
+/**
+ * Call length in ms. The docs say call_postprocessing.call_duration is milliseconds, but a real call sent 9.02 for a
+ * ~9 s call (NOTES.md). Calls are capped at 12 minutes (720 s), and a value under 3600 read as ms would be a call
+ * shorter than the greeting — so values under 3600 are seconds.
+ */
+export function durationMs(data: Record<string, unknown>): number | null {
+  const v = numberField(data, 'call_duration');
+  if (v === null || v < 0) return null;
+  return Math.round(v < 3600 ? v * 1000 : v);
+}
+
+/** A phone number (E.164 or with spaces/dashes), not placeholders such as "web-user" or "N/A". */
+export function asPhoneNumber(v: unknown): string | null {
+  if (typeof v !== 'string') return null;
+  const s = v.trim();
+  return /^\+?\d[\d\s()-]{6,18}\d$/.test(s) ? s : null;
 }
 
 export function textField(data: Record<string, unknown>, key: string): string | null {

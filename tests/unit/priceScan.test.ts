@@ -16,7 +16,10 @@ describe('scanText — SPEC §10 money terms are flagged', () => {
     ['lakhs', 'Several lakhs.'],
     ['lac', 'About 5 lac.'],
     ['crore', 'Not even a crore.'],
-    ['per sq', 'It is 1800 per sq ft.'],
+    ['per sq', 'It is 999 per sq ft.'],
+    ['per sqft (no space)', 'It is about 999 per sqft for your flat.'],
+    ['per sq.ft', 'Roughly 999 per sq.ft.'],
+    ['persqft', 'Around 999 persqft.'],
     ['per square', 'Per square foot it varies.'],
     ['/sq', 'Roughly 2000/sqft.'],
     ['rate', 'Our rate is fixed.'],
@@ -74,7 +77,7 @@ describe('scanAgentLines', () => {
   });
 
   it('returns each offending agent line once, verbatim', () => {
-    const leak = 'For a flat like yours we usually charge 1,800 per sq ft.';
+    const leak = 'For a flat like yours we usually charge 999 per sq ft.';
     const t = [agent('Namaste.'), user('How much?'), agent(leak), agent('Starting at 2 lakh.')].join('\n\n');
     expect(scanAgentLines(t)).toEqual({ flag: true, lines: [leak, 'Starting at 2 lakh.'] });
   });

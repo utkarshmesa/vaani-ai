@@ -24,9 +24,20 @@ export async function handleTransferEvent(ev: VaaniEvent & { callId: string }): 
   });
   if (!failed) return;
 
-  const lead = await repo.getLeadByCallId(ev.callId);
+  // If the call is still being processed, processCall re-checks after it finishes (see upgradeIfTransferFailed).
   const call = await repo.getCall(ev.callId);
-  if (!lead || !call?.processed_at || lead.outcome !== 'existing_client_transferred') return;
-  const upgraded = await repo.updateLead(lead.id, { outcome: 'transfer_failed' });
-  await sendUrgent('transfer_failed', upgraded, call);
+  if (call?.processed_at) await upgradeIfTransferFailed(ev.callId);
+}
+
+/**
+ * A transfer failure can arrive before, during or after post-processing. Whichever path sees both the processed lead
+ * and the failure upgrades it — via compare-and-set, so the urgent email goes out exactly once.
+ */
+export async function upgradeIfTransferFailed(callId: string): Promise<void> {
+  const repo = getRepo();
+  const lead = await repo.getLeadByCallId(callId);
+  if (!lead || lead.outcome !== 'existing_client_transferred' || !(await lastTransferFailed(callId))) return;
+  const upgraded = await repo.updateLeadIf(lead.id, { outcome: 'transfer_failed' }, [], { outcome: 'existing_client_transferred' });
+  if (!upgraded) return;
+  await sendUrgent('transfer_failed', upgraded, (await repo.getCall(callId))!);
 }

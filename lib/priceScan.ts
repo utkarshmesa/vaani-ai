@@ -19,7 +19,7 @@ const MONEY_TERMS: RegExp[] = [
   /\blakhs?\b/i,
   /\blacs?\b/i,
   /\bcrores?\b/i,
-  /\bper\s+sq\b/i,
+  /\bper\s*sq/i, // "per sq ft", "per sqft", "per sq.ft", "persqft"
   /\bper\s+square\b/i,
   /\/\s*sq/i,
   /\brates?\b/i,

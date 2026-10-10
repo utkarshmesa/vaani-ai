@@ -107,9 +107,10 @@ export function createMemoryRepo(): Repo {
       Object.assign(l, copy(patch));
       return copy(l);
     },
-    async updateLeadIf(id, patch, whenNull) {
+    async updateLeadIf(id, patch, whenNull, whenEquals = {}) {
       const l = mustGet(leads, id, 'lead');
       if (whenNull.some((f) => l[f] !== null)) return null;
+      if (Object.entries(whenEquals).some(([f, v]) => l[f as keyof LeadRow] !== v)) return null;
       Object.assign(l, copy(patch));
       return copy(l);
     },

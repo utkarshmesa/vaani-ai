@@ -1,6 +1,6 @@
 import { getRepo } from '@/lib/db';
 import { processCall, type CallResult, type ProcessOptions } from './processCall';
-import { readEvent } from './payload';
+import { asPhoneNumber, readEvent } from './payload';
 import { handleTransferEvent } from './transfers';
 
 export type ProcessResult =
@@ -26,7 +26,8 @@ export async function processEvent(body: unknown, opts: ProcessOptions = {}): Pr
 
     case 'call_started':
       // Fallback source of the caller's number while call-history is unavailable (NOTES.md).
-      if (ev.callId) await recordCallerNumber(ev.callId, ev.data.phone_number);
+      // Outbound samples use data.phone_number; real inbound calls put the caller in top-level `from` (NOTES.md).
+      if (ev.callId) await recordCallerNumber(ev.callId, asPhoneNumber(ev.data.phone_number) ?? asPhoneNumber(ev.top.from) ?? asPhoneNumber(ev.data.caller));
       return { kind: 'ignored', event: ev.event };
 
     case '':
@@ -42,8 +43,8 @@ export async function processEvent(body: unknown, opts: ProcessOptions = {}): Pr
  * call_started carries `phone_number`. For inbound calls this should be the caller (unverified until the first
  * live call — NOTES.md). Record it, and fill the call's number if it was processed without one.
  */
-async function recordCallerNumber(callId: string, phone: unknown): Promise<void> {
-  if (typeof phone !== 'string' || !phone.trim()) return;
+async function recordCallerNumber(callId: string, phone: string | null): Promise<void> {
+  if (!phone) return;
   const repo = getRepo();
   await repo.insertEvent({ type: 'caller_number', call_id: callId, meta: { phone_number: phone.trim(), source: 'call_started' } });
   const call = await repo.getCall(callId);
