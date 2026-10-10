@@ -220,3 +220,4 @@ details.more .stats { margin-top: 12px; }
 .stack { grid-template-columns: minmax(0, 1fr); }
 .grid > *, .stack > * { min-width: 0; }
 .hero .big.pending { color: var(--muted); font-size: 30px; letter-spacing: -0.01em; }
+@media (max-width: 760px) { .topbar { position: static; } }
