@@ -146,6 +146,19 @@ describe('booked but not in Cal.com', () => {
     expect(lead).toMatchObject({ outcome: 'callback', needs_attention: true, attention_reason: ATTENTION.bookingNotFound });
   });
 
+  it('without CALCOM_EVENT_TYPE_ID (Cal.com not set up yet), a booking goes to a designer flagged to verify', async () => {
+    const before = process.env.CALCOM_EVENT_TYPE_ID;
+    process.env.CALCOM_EVENT_TYPE_ID = '';
+    try {
+      const { lead } = await run('t01');
+      expect(lead).toMatchObject({ outcome: 'callback', needs_attention: true, attention_reason: ATTENTION.calcomNotConfigured });
+      expect(ATTENTION.calcomNotConfigured).toBe('Cal.com event not set up — verify the booking');
+      expect(outbox()).toHaveLength(1);
+    } finally {
+      process.env.CALCOM_EVENT_TYPE_ID = before;
+    }
+  });
+
   it('if Cal.com errors, the lead still goes to a designer, flagged to verify', async () => {
     mocks.calcom.listBookings = async () => { throw new Error('Cal.com 503'); };
     const { lead } = await run('t01');

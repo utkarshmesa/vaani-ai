@@ -13,7 +13,7 @@ export const ENV_KEYS = [
 
 /** Needed only when talking to real services (MOCK_EXTERNAL unset). */
 const EXTERNAL_KEYS = [
-  'VAANI_API_KEY', 'VAANI_AGENT_ID', 'CALCOM_API_KEY', 'CALCOM_EVENT_TYPE_ID',
+  'VAANI_API_KEY', 'VAANI_AGENT_ID', 'CALCOM_API_KEY', // CALCOM_EVENT_TYPE_ID may be unset until Cal.com is set up
   'GEMINI_API_KEY', 'GEMINI_MODEL', 'RESEND_API_KEY', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
 ] as const;
 

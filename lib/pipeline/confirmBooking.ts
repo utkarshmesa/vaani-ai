@@ -21,10 +21,13 @@ export async function confirmBooking(lead: LeadRow): Promise<LeadRow> {
 
   if (!lead.booked_slot_start) return downgrade(ATTENTION.bookingNotFound, { slot: null });
 
+  const eventTypeId = env().CALCOM_EVENT_TYPE_ID;
+  if (!eventTypeId) return downgrade(ATTENTION.calcomNotConfigured, { slot: lead.booked_slot_start });
+
   const slot = new Date(lead.booked_slot_start);
   let bookings;
   try {
-    bookings = await getAdapters().calcom.listBookings({ eventTypeId: env().CALCOM_EVENT_TYPE_ID, ...bookingSearchWindow(slot) });
+    bookings = await getAdapters().calcom.listBookings({ eventTypeId, ...bookingSearchWindow(slot) });
   } catch (err) {
     return downgrade(ATTENTION.bookingCheckFailed, { slot: lead.booked_slot_start, error: String((err as Error)?.message ?? err) });
   }

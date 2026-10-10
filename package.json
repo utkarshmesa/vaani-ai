@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "simulate": "tsx scripts/simulate.ts",
     "brief:try": "tsx scripts/try-brief.ts",
-    "vaani:configure": "tsx scripts/configure-vaani.ts"
+    "vaani:configure": "tsx scripts/configure-vaani.ts",
+    "db:check": "tsx scripts/check-db.ts"
   },
   "dependencies": {
     "@google/genai": "^2.28.0",

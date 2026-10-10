@@ -48,6 +48,11 @@ describe('parseEnv', () => {
     expect(() => parseEnv({ ...rest, MOCK_EXTERNAL: '1' })).toThrow(/CRON_SECRET/);
   });
 
+  it('allows CALCOM_EVENT_TYPE_ID to be unset until Cal.com is configured', () => {
+    const { CALCOM_EVENT_TYPE_ID: _c, ...rest } = external;
+    expect(parseEnv({ ...base, ...rest }).CALCOM_EVENT_TYPE_ID).toBe(0);
+  });
+
   it('requires every external credential when not mocked', () => {
     expect(() => parseEnv({ ...base })).toThrow(/VAANI_API_KEY/);
     const e = parseEnv({ ...base, ...external });
