@@ -1,3 +1,4 @@
+import { cannedBrief } from '@/lib/brief/canned';
 import type {
   CalBooking, CalcomAdapter, GeminiAdapter, GeminiRequest, OutgoingEmail, ResendAdapter, VaaniAdapter,
 } from './types';
@@ -24,7 +25,7 @@ export interface MockCalcom extends CalcomAdapter {
 export interface MockGemini extends GeminiAdapter {
   fixedInputTokens: number;
   fixedOutputTokens: number;
-  /** Produces the response text. Checkpoint 4 replaces the default with a canned brief built from the prompt. */
+  /** Produces the response text; defaults to a canned brief built from the prompt. */
   responder: (req: GeminiRequest, attempt: number) => string;
   requests: GeminiRequest[];
 }
@@ -35,7 +36,8 @@ export interface MockResend extends ResendAdapter {
   failWith: string | null;
 }
 
-const DEFAULT_RESPONDER = () => JSON.stringify({ mock: true });
+/** SPEC §15: Gemini returns a canned brief (built from the lead fields in the prompt). */
+const DEFAULT_RESPONDER = (req: GeminiRequest) => cannedBrief(req);
 
 /**
  * SPEC §15: in mock mode Cal.com holds bookings at the t01 and t13 slots.
@@ -109,7 +111,10 @@ function createMockResend(): MockResend {
       const id = `mock_${m.outbox.length + 1}`;
       m.outbox.push({ ...email, id });
       // Make `npm run simulate` visible in the dev-server console (quiet under Vitest).
-      if (!process.env.VITEST) console.info(`[mock-resend] ${email.tag} → ${email.to} · ${email.subject}`);
+      if (!process.env.VITEST) {
+        const links = email.text.match(/https?:\/\/\S+\/api\/leads\/\S+/g) ?? [];
+        console.info([`[mock-resend] ${email.tag} → ${email.to} · ${email.subject}`, ...links.map((l) => `  ${l}`)].join('\n'));
+      }
       return { id };
     },
   };

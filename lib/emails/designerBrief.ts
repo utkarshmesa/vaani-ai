@@ -1,22 +1,32 @@
+import { briefToHtml, briefToText } from '@/lib/brief/render';
+import type { Brief } from '@/lib/brief/schema';
 import type { DesignerRow, LeadRow } from '@/lib/db/types';
 import { humanise } from '@/lib/format';
 import { formatIst } from '@/lib/time';
-import { button, detailsTable, detailsText, layout } from './html';
+import { button, detailsTable, detailsText, esc, layout } from './html';
 
 export interface DesignerBriefInput {
   lead: LeadRow;
   designer: DesignerRow;
   acceptUrl: string;
   callerNumber: string | null;
+  brief: Brief | null;
+  /** Name of the previous designer when the lead was reassigned */
+  reassignedFrom?: string;
+}
+
+/** "Kothrud · apartment · Mon 7 Sep, 11:00 am" — also used by reminder and escalation subjects. */
+export function leadLabel(lead: LeadRow): string {
+  const when = lead.booking_confirmed && lead.booked_slot_start ? formatIst(lead.booked_slot_start) : 'call back';
+  return `${lead.locality ?? 'locality not given'} · ${humanise(lead.property_type) ?? 'property not given'} · ${when}`;
 }
 
 /** SPEC §12: `New lead · {locality} · {property} · {booked slot or "call back"}` */
 export function designerBriefSubject(lead: LeadRow): string {
-  const when = lead.booking_confirmed && lead.booked_slot_start ? formatIst(lead.booked_slot_start) : 'call back';
-  return `New lead · ${lead.locality ?? 'locality not given'} · ${humanise(lead.property_type) ?? 'property not given'} · ${when}`;
+  return `New lead · ${leadLabel(lead)}`;
 }
 
-function leadRows(lead: LeadRow, callerNumber: string | null): [string, string | number | null][] {
+export function leadRows(lead: LeadRow, callerNumber: string | null): [string, string | number | null][] {
   return [
     ['Name', lead.caller_name],
     ['Phone', callerNumber],
@@ -32,14 +42,36 @@ function leadRows(lead: LeadRow, callerNumber: string | null): [string, string |
   ];
 }
 
-/** Designer handoff email. Checkpoint 4 adds the Gemini brief to this template. */
-export function designerBriefEmail({ lead, designer, acceptUrl, callerNumber }: DesignerBriefInput) {
+/** Designer handoff email (SPEC §12): brief + lead details + a big Accept button. */
+export function designerBriefEmail({ lead, designer, acceptUrl, callerNumber, brief, reassignedFrom }: DesignerBriefInput) {
   const rows = leadRows(lead, callerNumber);
-  const intro = `Hi ${designer.name.split(' ')[0]}, a new enquiry has been assigned to you. Please accept it so the studio knows you have it.`;
+  const first = designer.name.split(' ')[0];
+  const intro = reassignedFrom
+    ? `Hi ${first}, this lead has been reassigned to you from ${reassignedFrom}. Please accept it so the studio knows you have it.`
+    : `Hi ${first}, a new enquiry has been assigned to you. Please accept it so the studio knows you have it.`;
+  const note = reassignedFrom ? `Reassigned to you from ${reassignedFrom}.` : null;
+  const noBrief = 'Brief not available — see the lead details below.';
+
   const html = layout('New lead for you', `
-<p>${intro}</p>
+<p>${esc(intro)}</p>
+<p>${button(acceptUrl, 'Accept this lead')}</p>
+${brief ? briefToHtml(brief) : `<p><em>${esc(noBrief)}</em></p>`}
+<p style="margin:16px 0 4px"><strong>Lead details</strong></p>
 ${detailsTable(rows)}
 <p style="margin-top:20px">${button(acceptUrl, 'Accept this lead')}</p>`);
-  const text = `${intro}\n\n${detailsText(rows)}\n\nAccept this lead: ${acceptUrl}\n`;
+
+  const text = [
+    intro,
+    note,
+    '',
+    brief ? briefToText(brief) : noBrief,
+    '',
+    'Lead details:',
+    detailsText(rows),
+    '',
+    `Accept this lead: ${acceptUrl}`,
+    '',
+  ].filter((l) => l !== null).join('\n');
+
   return { subject: designerBriefSubject(lead), html, text };
 }

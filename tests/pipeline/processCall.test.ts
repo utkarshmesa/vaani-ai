@@ -45,7 +45,9 @@ describe('call_postprocessing — booked (t01)', () => {
       summary: expect.stringContaining('Priya'),
       vaani_credits: 12.5,
       vaani_inr: 12.5,
-      total_inr: 12.5,
+      total_inr: 12.634, // Vaani 12.5 + Gemini brief 0.134 (placeholder rates)
+      gemini_input_tokens: 2000,
+      gemini_output_tokens: 400,
       price_flag: false,
       price_flag_lines: [],
       processed_at: '2026-09-02T04:57:40.000Z',
@@ -76,7 +78,8 @@ describe('call_postprocessing — booked (t01)', () => {
     const href = mail.html.match(/href="([^"]+\/accept[^"]*)"/)![1].replace(/&amp;/g, '&');
     const u = new URL(href);
     expect(u.pathname).toBe(`/api/leads/${lead.id}/accept`);
-    expect(verifyLink({ leadId: lead.id, action: 'accept', exp: Number(u.searchParams.get('exp')), sig: u.searchParams.get('sig')! },
+    expect(u.searchParams.get('value')).toBe(ANANYA.id); // bound to the assigned designer
+    expect(verifyLink({ leadId: lead.id, action: 'accept', value: ANANYA.id, exp: Number(u.searchParams.get('exp')), sig: u.searchParams.get('sig')! },
       process.env.LINK_SIGNING_SECRET!, new Date('2026-09-02T05:00:00Z'))).toEqual({ ok: true });
 
     expect((await getRepo().getDesigner(ANANYA.id))?.last_assigned_at).toBe('2026-09-02T04:57:40.000Z');

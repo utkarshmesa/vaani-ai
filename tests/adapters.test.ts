@@ -203,3 +203,37 @@ describe('mock adapters', () => {
     expect(mocks.gemini.requests).toHaveLength(1);
   });
 });
+
+describe('Gemini adapter key fallback', () => {
+  const ok = { text: '{}', usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1 } };
+  const apiError = (status: number) => Object.assign(new Error(`status ${status}`), { status });
+
+  it('falls back to the next key on auth, quota and server errors', async () => {
+    for (const status of [401, 403, 429, 500, 503]) {
+      const first = vi.fn(async () => { throw apiError(status); });
+      const second = vi.fn(async () => ok);
+      const gemini = createGeminiAdapter({ apiKey: 'a,b', model: 'm', clients: [{ models: { generateContent: first } }, { models: { generateContent: second } }] });
+      await expect(gemini.generateJson({ system: '', prompt: '', jsonSchema: {} })).resolves.toMatchObject({ text: '{}' });
+      expect(second, String(status)).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it('does not fall back on a bad request, and throws the last error when every key fails', async () => {
+    const bad = vi.fn(async () => { throw apiError(400); });
+    const never = vi.fn(async () => ok);
+    const g1 = createGeminiAdapter({ apiKey: 'a,b', model: 'm', clients: [{ models: { generateContent: bad } }, { models: { generateContent: never } }] });
+    await expect(g1.generateJson({ system: '', prompt: '', jsonSchema: {} })).rejects.toThrow('status 400');
+    expect(never).not.toHaveBeenCalled();
+
+    const g2 = createGeminiAdapter({ apiKey: 'a,b', model: 'm', clients: [
+      { models: { generateContent: async () => { throw apiError(429); } } },
+      { models: { generateContent: async () => { throw apiError(503); } } },
+    ] });
+    await expect(g2.generateJson({ system: '', prompt: '', jsonSchema: {} })).rejects.toThrow('status 503');
+  });
+
+  it('splits a comma-separated GEMINI_API_KEY into one client per key', async () => {
+    const { geminiKeys } = await import('@/lib/adapters/gemini');
+    expect(geminiKeys(' k1, k2 ,,k3 ')).toEqual(['k1', 'k2', 'k3']);
+  });
+});

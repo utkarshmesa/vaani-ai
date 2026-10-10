@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "simulate": "tsx scripts/simulate.ts"
+    "simulate": "tsx scripts/simulate.ts",
+    "brief:try": "tsx scripts/try-brief.ts"
   },
   "dependencies": {
     "@google/genai": "^2.28.0",
