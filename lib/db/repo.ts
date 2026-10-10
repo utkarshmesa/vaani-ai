@@ -7,8 +7,8 @@ export interface ListCallsQuery {
   from?: Date;
   /** received_at < to */
   to?: Date;
-  /** vaani_credits is null */
-  missingCost?: boolean;
+  /** no confirmed Vaani cost yet: vaani_credits is null, or only an estimate */
+  costPending?: boolean;
 }
 
 export interface ListLeadsQuery {

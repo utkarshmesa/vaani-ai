@@ -19,6 +19,7 @@ export const SEED_DESIGNERS: DesignerRow[] = [
  */
 export const SEED_SETTINGS: SettingsRow = {
   credit_to_inr: 1,
+  vaani_inr_per_minute_estimate: 5.6, // shown on the agent page in the Vaani dashboard
   gemini_input_inr_per_mtok: 25,
   gemini_output_inr_per_mtok: 210,
   credits_loaded: 1000,

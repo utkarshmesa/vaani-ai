@@ -6,7 +6,8 @@ import { ATTENTION } from '@/lib/pipeline/attention';
 import { getRepo } from '@/lib/db';
 import { mocks } from '@/lib/adapters/mocks';
 import { setNow } from '@/lib/clock';
-import { SEED_DESIGNERS } from '@/lib/db/seed';
+import { SEED_DESIGNERS, SEED_SETTINGS } from '@/lib/db/seed';
+import { estimateVaaniCost } from '@/lib/cost';
 import { verifyLink } from '@/lib/links';
 
 const FAST = { lookupDelayMs: 0 };
@@ -264,10 +265,11 @@ describe('incomplete (t17)', () => {
 });
 
 describe('cost and caller number lookups', () => {
-  it('leaves cost null when the call is not in call-history yet (cron retries later)', async () => {
+  it('estimates the cost when the call is not in call-history yet (cron replaces it later)', async () => {
     mocks.vaani.notListed.add('inbound-1788326860-3fa91c01');
     const { call } = await run('t01');
-    expect(call).toMatchObject({ vaani_credits: null, vaani_inr: null, total_inr: null, from_number: null, processed_at: expect.any(String) });
+    const est = estimateVaaniCost(252318, SEED_SETTINGS);
+    expect(call).toMatchObject({ vaani_credits: est.credits, vaani_inr: est.inr, cost_estimated: true, from_number: null, processed_at: expect.any(String) });
   });
 
   it('retries the lookup for urgent calls, then sends with "number pending"', async () => {
@@ -284,7 +286,7 @@ describe('cost and caller number lookups', () => {
     mocks.vaani.findCall = async () => { throw new Error('Vaani 500'); };
     const { call, lead } = await run('t01');
     expect(call.processed_at).not.toBeNull();
-    expect(call.vaani_credits).toBeNull();
+    expect(call).toMatchObject({ cost_estimated: true, vaani_credits: estimateVaaniCost(252318, SEED_SETTINGS).credits });
     expect(lead.email_sent_at).not.toBeNull();
   });
 });

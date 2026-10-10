@@ -138,6 +138,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
           <Tile value={num(cost.creditsRemaining)} label={`Vaani credits remaining (${num(cost.creditsUsedAllTime)} used)`} />
         </div>
         {cost.unknownCostCalls ? <p className="muted">{cost.unknownCostCalls} call(s) have no Vaani cost yet; it is retried every minute.</p> : null}
+        {cost.estimatedCostCalls ? (
+          <p className="muted">
+            {cost.estimatedCostCalls} call(s) use an estimated Vaani cost (call length × the per-minute rate in settings), because
+            Vaani&apos;s call-history API is unavailable. Real costs replace the estimates automatically if it recovers.
+          </p>
+        ) : null}
       </Section>
 
       <Section title="Needs attention" tag="urgent, incomplete, booking not found, price flags, unaccepted">

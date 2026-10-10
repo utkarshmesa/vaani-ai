@@ -17,3 +17,15 @@ export function geminiInr(inputTokens: number, outputTokens: number, rates: Rate
 export function totalInr(vaani: number | null, gemini: number): number | null {
   return vaani === null ? null : round4(vaani + gemini);
 }
+
+/**
+ * Vaani cost estimated from call length, for when call-history can't supply call_cost (NOTES.md: it returns 500
+ * on this account). Uses the per-minute rate the Vaani dashboard shows for the agent.
+ */
+export function estimateVaaniCost(
+  durationMs: number,
+  rates: Pick<SettingsRow, 'vaani_inr_per_minute_estimate' | 'credit_to_inr'>,
+): { inr: number; credits: number } {
+  const inr = round4((durationMs / 60_000) * rates.vaani_inr_per_minute_estimate);
+  return { inr, credits: round4(inr / rates.credit_to_inr) };
+}

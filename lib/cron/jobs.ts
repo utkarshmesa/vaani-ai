@@ -106,24 +106,40 @@ export async function sendOutcomeRequests(leads: LeadRow[], s: SettingsRow): Pro
   return sent;
 }
 
-/** SPEC §13: retry missing call_cost lookups (one call-history scan for all of them). */
+/** A failing call-history API is logged at most this often, not every minute (NOTES.md: it returns 500 here). */
+const LOOKUP_FAILURE_LOG_MS = 60 * 60_000;
+
+/**
+ * SPEC §13: retry call_cost lookups for calls with no confirmed cost (missing, or estimated from call length),
+ * in one call-history scan. A real cost replaces the estimate.
+ */
 export async function retryMissingCosts(s: SettingsRow): Promise<string[]> {
   const repo = getRepo();
   const since = new Date(now().getTime() - COST_RETRY_DAYS * 86_400_000);
-  const missing = (await repo.listCalls({ missingCost: true, from: since })).filter((c) => c.processed_at);
-  if (!missing.length) return [];
+  const pending = (await repo.listCalls({ costPending: true, from: since })).filter((c) => c.processed_at);
+  if (!pending.length) return [];
 
-  const found = await getAdapters().vaani.findCalls(missing.map((c) => c.call_id));
+  let found;
+  try {
+    found = await getAdapters().vaani.findCalls(pending.map((c) => c.call_id));
+  } catch (err) {
+    const recent = await repo.listEvents({ type: 'cost_lookup_failed', from: new Date(now().getTime() - LOOKUP_FAILURE_LOG_MS + 1) });
+    if (!recent.length) {
+      await repo.insertEvent({ type: 'cost_lookup_failed', meta: { error: String((err as Error)?.message ?? err).slice(0, 500), pending: pending.length } });
+    }
+    return [];
+  }
+
   const filled: string[] = [];
-  for (const call of missing) {
+  for (const call of pending) {
     const item = found.get(call.call_id);
     if (!item || item.post_processing_status !== 'completed' || item.call_cost === null) continue;
     const vInr = vaaniInr(item.call_cost, s);
     await repo.updateCall(call.call_id, {
-      vaani_credits: item.call_cost, vaani_inr: vInr, total_inr: totalInr(vInr, call.gemini_inr),
+      vaani_credits: item.call_cost, vaani_inr: vInr, total_inr: totalInr(vInr, call.gemini_inr), cost_estimated: false,
       from_number: call.from_number ?? item.from_number,
     });
-    await repo.insertEvent({ type: 'cost_filled', call_id: call.call_id, meta: { credits: item.call_cost } });
+    await repo.insertEvent({ type: 'cost_filled', call_id: call.call_id, meta: { credits: item.call_cost, replaced_estimate: call.cost_estimated } });
     filled.push(call.call_id);
   }
   return filled;

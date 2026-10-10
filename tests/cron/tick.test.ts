@@ -221,11 +221,11 @@ describe('outcome requests (SPEC §12)', () => {
 });
 
 describe('cost retry (SPEC §13)', () => {
-  it('fills a missing call_cost once call-history lists the call', async () => {
+  it('replaces the estimated cost with the real call_cost once call-history lists the call', async () => {
     mocks.vaani.notListed.add('inbound-1788326860-3fa91c01');
     await processFixture('t01');
     const before = (await getRepo().getCall('inbound-1788326860-3fa91c01'))!;
-    expect(before.vaani_credits).toBeNull();
+    expect(before.cost_estimated).toBe(true);
 
     advance(MIN);
     expect((await runTick()).costsFilled).toEqual([]);
@@ -234,7 +234,7 @@ describe('cost retry (SPEC §13)', () => {
     advance(MIN);
     expect((await runTick()).costsFilled).toEqual(['inbound-1788326860-3fa91c01']);
     const after = (await getRepo().getCall('inbound-1788326860-3fa91c01'))!;
-    expect(after).toMatchObject({ vaani_credits: 12.5, vaani_inr: 12.5, from_number: '+919800000000' });
+    expect(after).toMatchObject({ vaani_credits: 12.5, vaani_inr: 12.5, cost_estimated: false, from_number: '+919800000000' });
     expect(after.total_inr).toBeCloseTo(12.5 + before.gemini_inr, 6);
     expect(await getRepo().listEvents({ callId: after.call_id, type: 'cost_filled' })).toHaveLength(1);
   });
@@ -273,12 +273,15 @@ describe('low balance (SPEC §13)', () => {
     expect(mails('low_balance')).toHaveLength(2);
   });
 
-  it('calls without a known cost do not count as used', async () => {
-    await getRepo().updateSettings({ credits_loaded: 20, low_balance_threshold_credits: 10 });
+  it('estimated costs count towards credits used', async () => {
     mocks.vaani.notListed.add('inbound-1788326860-3fa91c01');
     mocks.vaani.notListed.add('inbound-1789541730-8b27d413');
-    await processFixture('t01');
-    await processFixture('t13');
+    await processFixture('t01'); // ≈4.2 min × 5.6 ≈ 23.5 credits
+    await processFixture('t13'); // ≈6.1 min × 5.6 ≈ 34.4 credits
+    await getRepo().updateSettings({ credits_loaded: 100, low_balance_threshold_credits: 50 }); // ≈42 left < 50
+    advance(MIN);
+    expect((await runTick()).lowBalanceAlert).toBe(true);
+    await getRepo().updateSettings({ credits_loaded: 200, low_balance_alerted_at: null }); // ≈142 left
     advance(MIN);
     expect((await runTick()).lowBalanceAlert).toBe(false);
   });
@@ -288,14 +291,15 @@ describe('job isolation', () => {
   it('one failing job does not stop the others', async () => {
     await getRepo().updateSettings({ credits_loaded: 10, low_balance_threshold_credits: 100 });
     await processFixture('t01');
-    mocks.calcom.listBookings = async () => { throw new Error('unused'); };
-    mocks.vaani.findCalls = async () => { throw new Error('Vaani 500'); };
-    await getRepo().updateCall('inbound-1788326860-3fa91c01', { vaani_credits: null });
+    // Break the call queries that costRetry and lowBalance use; reminders read leads and must still run.
+    getRepo().listCalls = async () => { throw new Error('database timeout'); };
     advance(15 * MIN);
     const r = await runTick();
-    expect(r.errors).toEqual([expect.objectContaining({ job: 'costRetry', error: expect.stringContaining('Vaani 500') })]);
+    expect(r.errors).toEqual([
+      expect.objectContaining({ job: 'costRetry', error: expect.stringContaining('database timeout') }),
+      expect.objectContaining({ job: 'lowBalance', error: expect.stringContaining('database timeout') }),
+    ]);
     expect(r.reminders).toHaveLength(1);
-    expect(r.lowBalanceAlert).toBe(true);
-    expect(await getRepo().listEvents({ type: 'cron_error' })).toHaveLength(1);
+    expect(await getRepo().listEvents({ type: 'cron_error' })).toHaveLength(2);
   });
 });

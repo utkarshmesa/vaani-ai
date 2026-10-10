@@ -24,7 +24,7 @@ function leadFor(over: Partial<LeadRow> = {}): LeadRow {
 const callFor = (transcript: string): CallRow => ({
   call_id: 'call-1', received_at: '2026-09-02T04:57:40.000Z', from_number: null, duration_ms: 1, transcript, summary: 's',
   entities: null, dispositions: null, recording_url: null, raw_payload: {}, vaani_credits: null, vaani_inr: null,
-  gemini_input_tokens: 0, gemini_output_tokens: 0, gemini_inr: 0, total_inr: null, price_flag: false, price_flag_lines: [],
+  gemini_input_tokens: 0, gemini_output_tokens: 0, gemini_inr: 0, total_inr: null, price_flag: false, price_flag_lines: [], cost_estimated: false,
   processing_started_at: null, processed_at: null, processing_error: null,
 });
 const T01 = loadFixture('t01').data.transcript;

@@ -10,7 +10,7 @@ const TIMESTAMP_COLUMNS = new Set([
 ]);
 const NUMERIC_COLUMNS = new Set([
   'vaani_credits', 'vaani_inr', 'gemini_inr', 'total_inr', 'carpet_area_sqft', 'credit_to_inr',
-  'gemini_input_inr_per_mtok', 'gemini_output_inr_per_mtok', 'credits_loaded', 'low_balance_threshold_credits',
+  'gemini_input_inr_per_mtok', 'vaani_inr_per_minute_estimate', 'gemini_output_inr_per_mtok', 'credits_loaded', 'low_balance_threshold_credits',
 ]);
 
 /** Make PostgREST output match memoryRepo: ISO-Z timestamps, numbers for numeric, "HH:MM" times. */
@@ -73,7 +73,7 @@ export function createSupabaseRepo(url: string, serviceRoleKey: string, client?:
       let query = db.from('calls').select('*').order('received_at');
       if (q.from) query = query.gte('received_at', q.from.toISOString());
       if (q.to) query = query.lt('received_at', q.to.toISOString());
-      if (q.missingCost) query = query.is('vaani_credits', null);
+      if (q.costPending) query = query.or('vaani_credits.is.null,cost_estimated.eq.true');
       return many<CallRow>(check(await query, 'listCalls'));
     },
 

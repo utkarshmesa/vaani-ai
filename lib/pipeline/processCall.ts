@@ -1,10 +1,10 @@
 import { now } from '@/lib/clock';
-import { totalInr, vaaniInr } from '@/lib/cost';
+import { estimateVaaniCost, totalInr, vaaniInr } from '@/lib/cost';
 import { getRepo } from '@/lib/db';
 import type { Json, LeadOutcome } from '@/lib/db/types';
 import { mapEntities } from '@/lib/mapEntities';
 import { scanAgentLines } from '@/lib/priceScan';
-import { lookupCallInfo } from './lookupCallInfo';
+import { callerFromCallStarted, lookupCallInfo } from './lookupCallInfo';
 import { isYes, numberField, textField, type VaaniEvent } from './payload';
 import { routeLead } from './route';
 import { lastTransferFailed } from './transfers';
@@ -69,16 +69,20 @@ export async function processCall(ev: VaaniEvent & { callId: string }, raw: unkn
     const priceLines = scan.lines.length ? scan.lines
       : vaaniSaysPrice ? ['(Vaani price_mentioned disposition = Yes; no line matched the scanner)'] : [];
 
-    // c. Cost and caller number from call-history
+    // c. Cost and caller number from call-history. If it can't supply them: cost estimated from call length
+    //    (replaced by the real figure by the cron if call-history recovers), number from the call_started webhook.
     const info = await lookupCallInfo(callId, {
       attempts: URGENT_OUTCOMES.includes(outcome) ? (opts.urgentLookupAttempts ?? 4) : 1,
       delayMs: opts.lookupDelayMs ?? 5000,
     });
-    const vInr = vaaniInr(info.credits, settings);
+    const estimate = info.credits === null && duration !== null ? estimateVaaniCost(duration, settings) : null;
+    const credits = info.credits ?? estimate?.credits ?? null;
+    const vInr = estimate ? estimate.inr : vaaniInr(credits, settings);
     const current = (await repo.getCall(callId))!;
     const call = await repo.updateCall(callId, {
-      from_number: info.fromNumber ?? current.from_number,
-      vaani_credits: info.credits,
+      from_number: info.fromNumber ?? current.from_number ?? (await callerFromCallStarted(callId)),
+      vaani_credits: credits,
+      cost_estimated: estimate !== null,
       vaani_inr: vInr,
       total_inr: totalInr(vInr, current.gemini_inr),
       price_flag: scan.flag || vaaniSaysPrice,

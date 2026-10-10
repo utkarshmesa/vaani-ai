@@ -257,6 +257,7 @@ Enum-valued lead fields are `text`, checked by zod in the mapper rather than by 
 | D2 | **Redacted qualified.md.** | `Docs/qualified.kb.md` (example figure replaced by words) is used for the KB upload (§19) and in `lib/brief/qualified.ts`. A test asserts it passes `priceScan`. |
 | D3 | **Timeline:** decline under about 8 weeks; 8–10 weeks counts as `unclear`, so book and note it for the designer. | VAANI_AGENT.md timeline rule and the `timeline_fit` prompt are updated to match (done). |
 | D4 | **Tests use an in-memory repo, plus PGlite to check the migrations.** | As in §0. |
+| D5 | **Vaani call-history returns 500 on this account → fallback only** (2026-10-10). | Estimated cost from call length × ₹5.60/min (`cost_estimated`), caller number from `call_started`; the real cost replaces the estimate if the API recovers. Migration 0004. See NOTES.md. |
 
 Defaults I'll use unless you say otherwise: Q3 → (b) retry the call-history lookup inline for up to ~20 s, then send with "number pending". Q6 → yes. Q7 → yes. Q11 → `git init` at CP1. Q13 → yes, extend the scanner. Q4 → seed placeholder rates marked `TODO` until you give real ones.
 

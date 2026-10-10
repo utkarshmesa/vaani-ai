@@ -40,7 +40,7 @@ describe('Supabase migrations (applied to PGlite)', () => {
     expect(d.rows).toEqual([...SEED_DESIGNERS].sort((a, b) => a.name.localeCompare(b.name)));
 
     const s = await db.query<Record<string, unknown>>(`
-      select credit_to_inr::float8, gemini_input_inr_per_mtok::float8, gemini_output_inr_per_mtok::float8,
+      select credit_to_inr::float8, vaani_inr_per_minute_estimate::float8, gemini_input_inr_per_mtok::float8, gemini_output_inr_per_mtok::float8,
              credits_loaded::float8, low_balance_threshold_credits::float8, working_days,
              to_char(work_start, 'HH24:MI') as work_start, to_char(work_end, 'HH24:MI') as work_end,
              reminder_minutes, escalation_minutes, low_balance_alerted_at
@@ -65,11 +65,11 @@ describe('Supabase migrations (applied to PGlite)', () => {
   it('applies column defaults matching the in-memory repo', async () => {
     const { rows } = await db.query<Record<string, unknown>>(`
       select c.price_flag, c.price_flag_lines, c.gemini_input_tokens, c.gemini_output_tokens, c.gemini_inr::float8,
-             l.reassign_count, l.booking_confirmed, l.needs_attention
+             c.cost_estimated, l.reassign_count, l.booking_confirmed, l.needs_attention
       from calls c join leads l using (call_id) where call_id = 'm1'`);
     expect(rows[0]).toEqual({
       price_flag: false, price_flag_lines: [], gemini_input_tokens: 0, gemini_output_tokens: 0, gemini_inr: 0,
-      reassign_count: 0, booking_confirmed: false, needs_attention: false,
+      cost_estimated: false, reassign_count: 0, booking_confirmed: false, needs_attention: false,
     });
   });
 

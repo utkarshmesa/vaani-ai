@@ -66,6 +66,8 @@ export interface Metrics {
     perProposal: number | null;
     projectedMonthEnd: number | null;
     unknownCostCalls: number;
+    /** Calls whose Vaani cost is estimated from call length (call-history unavailable) */
+    estimatedCostCalls: number;
     creditsUsedAllTime: number;
     creditsRemaining: number;
   };
@@ -214,6 +216,7 @@ export function computeMetrics(input: MetricsInput): Metrics {
       perProposal: ratio(totalInr, proposals),
       projectedMonthEnd,
       unknownCostCalls: calls.filter((c) => c.vaani_credits === null).length,
+      estimatedCostCalls: calls.filter((c) => c.cost_estimated).length,
       creditsUsedAllTime: input.creditsUsedAllTime,
       creditsRemaining: s.credits_loaded - input.creditsUsedAllTime,
     },

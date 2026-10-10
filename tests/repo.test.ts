@@ -42,11 +42,12 @@ describe('memoryRepo', () => {
     expect(await repo.claimCallProcessing('missing', staleBefore)).toBe(false);
   });
 
-  it('lists calls missing a cost', async () => {
+  it('lists calls without a confirmed cost (missing or estimated)', async () => {
     const repo = createMemoryRepo();
     await repo.upsertCall(rawCall('a'));
     await repo.upsertCall({ ...rawCall('b'), vaani_credits: 3 });
-    expect((await repo.listCalls({ missingCost: true })).map((c) => c.call_id)).toEqual(['a']);
+    await repo.upsertCall({ ...rawCall('c'), vaani_credits: 2, cost_estimated: true });
+    expect((await repo.listCalls({ costPending: true })).map((c) => c.call_id)).toEqual(['a', 'c']);
   });
 
   it('inserts leads with defaults and enforces one lead per call', async () => {

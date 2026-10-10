@@ -50,7 +50,7 @@ export function createMemoryRepo(): Repo {
         from_number: null, duration_ms: null, transcript: null, summary: null, entities: null, dispositions: null,
         recording_url: null, vaani_credits: null, vaani_inr: null,
         gemini_input_tokens: 0, gemini_output_tokens: 0, gemini_inr: 0, total_inr: null,
-        price_flag: false, price_flag_lines: [],
+        price_flag: false, price_flag_lines: [], cost_estimated: false,
         processing_started_at: null, processed_at: null, processing_error: null,
         ...copy(row),
       };
@@ -72,7 +72,7 @@ export function createMemoryRepo(): Repo {
     async listCalls(q = {}) {
       return [...calls.values()]
         .filter((c) => inRange(c.received_at, q.from, q.to))
-        .filter((c) => !q.missingCost || c.vaani_credits === null)
+        .filter((c) => !q.costPending || c.vaani_credits === null || c.cost_estimated)
         .map(copy);
     },
 

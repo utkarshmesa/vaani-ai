@@ -38,6 +38,8 @@ export interface CallRow {
   total_inr: number | null;
   price_flag: boolean;
   price_flag_lines: string[];
+  /** vaani_credits/vaani_inr are an estimate from call length (call-history unavailable). */
+  cost_estimated: boolean;
   processing_started_at: Iso | null;
   processed_at: Iso | null;
   processing_error: string | null;
@@ -103,6 +105,8 @@ export type EventInsert = Pick<EventRow, 'type'> & Partial<Pick<EventRow, 'lead_
 
 export interface SettingsRow {
   credit_to_inr: number;
+  /** ₹ per call minute, used to estimate Vaani cost when call-history can't supply call_cost. */
+  vaani_inr_per_minute_estimate: number;
   gemini_input_inr_per_mtok: number;
   gemini_output_inr_per_mtok: number;
   credits_loaded: number;
