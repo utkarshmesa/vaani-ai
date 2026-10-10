@@ -11,9 +11,7 @@ next-env.d.ts
 .env.local
 .env.*.local
 
-# confidential source material — kept local, not published
-Docs/pricing.md
-Docs/*.pdf
+# course brief — kept local, not published
 Problem Statement/
 
 # misc
