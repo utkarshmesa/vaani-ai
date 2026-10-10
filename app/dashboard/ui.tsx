@@ -59,10 +59,12 @@ export function Section({ title, tag, hint, children }: { title: string; tag?: s
   );
 }
 
-export function TopBar({ active, range, showSignOut = true }: {
+export function TopBar({ active, range, showSignOut = true, includeTests = false }: {
   active?: { from: string; to: string };
   range?: boolean;
   showSignOut?: boolean;
+  /** Carry the "include test calls" choice across period changes */
+  includeTests?: boolean;
 }) {
   const presets = presetRanges();
   const isPublic = isPublicDashboard();
@@ -79,13 +81,14 @@ export function TopBar({ active, range, showSignOut = true }: {
             <nav className="chips" aria-label="Period">
               {presets.map((p) => (
                 <a key={p.label} className={`chip${active && active.from === p.from && active.to === p.to ? ' on' : ''}`}
-                  href={`/dashboard?from=${p.from}&to=${p.to}`}>{p.label}</a>
+                  href={`/dashboard?from=${p.from}&to=${p.to}${includeTests ? '&tests=1' : ''}`}>{p.label}</a>
               ))}
             </nav>
             <form className="range-form" method="get" action="/dashboard">
               <input type="date" name="from" defaultValue={active?.from} aria-label="From" />
               <span className="public-note">–</span>
               <input type="date" name="to" defaultValue={active?.to} aria-label="To" />
+              {includeTests ? <input type="hidden" name="tests" value="1" /> : null}
               <button type="submit" className="btn">Show</button>
             </form>
           </>

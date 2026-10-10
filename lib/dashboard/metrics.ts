@@ -4,6 +4,7 @@ import {
 } from '@/lib/db/types';
 import { isCompleteRecord } from '@/lib/mapEntities';
 import { isWorkingTime, workingMinutesBetween } from '@/lib/workingHours';
+import { computeInsights, type Insights } from './insights';
 import type { DateRange } from './range';
 
 export interface AttentionItem {
@@ -73,6 +74,10 @@ export interface Metrics {
   };
   attention: AttentionItem[];
   calls: CallListRow[];
+  /** Founder-facing views (lib/dashboard/insights.ts) */
+  insights: Insights;
+  /** Test calls left out of every number above (see isTestCall) */
+  hiddenTestCalls: number;
 }
 
 export interface MetricsInput {
@@ -88,6 +93,7 @@ export interface MetricsInput {
   settings: SettingsRow;
   /** Sum of vaani_credits over all calls ever (for credits remaining) */
   creditsUsedAllTime: number;
+  hiddenTestCalls?: number;
 }
 
 const ratio = (a: number, b: number) => (b > 0 ? a / b : null);
@@ -222,5 +228,7 @@ export function computeMetrics(input: MetricsInput): Metrics {
     },
     attention: attention.sort((a, b) => b.at.localeCompare(a.at)),
     calls: callRows,
+    insights: computeInsights({ now: input.now, calls, leads, emailEvents: input.emailEvents, designers: input.designers, settings: s }),
+    hiddenTestCalls: input.hiddenTestCalls ?? 0,
   };
 }

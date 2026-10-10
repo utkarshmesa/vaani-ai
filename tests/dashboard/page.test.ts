@@ -44,7 +44,10 @@ describe('/dashboard page', () => {
     await seed();
     const html = await render({ from: '2026-09-01', to: '2026-09-30' });
 
-    for (const heading of ['Calls answered', 'Lead records', 'Designer follow-through', 'Price check', 'Cost', 'Needs attention', 'All calls']) {
+    for (const heading of [
+      'Are we still losing enquiries?', 'Needs attention', 'Where enquiries go', 'Calls answered', 'Price check',
+      'Designer follow-through', 'Cost', 'All calls',
+    ]) {
       expect(html).toContain(heading);
     }
     expect(html).toContain('value="2026-09-01"');
@@ -54,6 +57,26 @@ describe('/dashboard page', () => {
     expect(html).toContain('₹87.90'); // total cost
     expect(html).toContain('+919800000000'); // full numbers behind the password
     expect(html).toContain('Sign out');
+    // founder views
+    expect(html).toContain('Call these people back · 2'); // t09_failed and t17
+    expect(html).toContain('Chase a designer'); // price_leak is unaccepted after 30 working minutes
+    expect(html).toContain('Good fit for the studio');
+    expect(html).toContain('callers asked about price');
+    expect(html).toContain('Rohan Joshi');
+  });
+
+  it('hides test calls unless asked, and keeps the choice across period links', async () => {
+    cookieValue.current = await sessionToken();
+    const p = loadFixture('t01');
+    setNow(p.timestamp);
+    await processEvent({ ...p, call_id: 'stress-1-t01', data: { ...p.data, call_id: 'stress-1-t01' } }, { lookupDelayMs: 0 });
+    const hidden = await render({ from: '2026-09-01', to: '2026-09-30' });
+    expect(hidden).toContain('1 test call hidden');
+    expect(hidden).not.toContain('stress-1-t01');
+    const shown = await render({ from: '2026-09-01', to: '2026-09-30', tests: '1' });
+    expect(shown).toContain('Including test calls');
+    expect(shown).toContain('stress-1-t01');
+    expect(shown).toMatch(/href="\/dashboard\?from=[\d-]+&amp;to=[\d-]+&amp;tests=1"/);
   });
 
   it('links every call to its detail page', async () => {
