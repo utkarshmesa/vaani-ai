@@ -1,0 +1,33 @@
+{
+  "event": "call_postprocessing",
+  "call_id": "inbound-1789665330-2b6c0f17",
+  "timestamp": "2026-09-22T08:45:30.000000+00:00",
+  "data": {
+    "room_name": "inbound-1789665330-2b6c0f17",
+    "call_id": "inbound-1789665330-2b6c0f17",
+    "call_duration": 72140.6,
+    "end_reason": "User disconnected",
+    "summary": "The caller began to ask about a project and the line dropped after about a minute, before any details were collected.",
+    "entities": {
+      "caller_name": null,
+      "enquiry_type": "new_enquiry",
+      "locality": null,
+      "in_service_area": "unclear",
+      "property_type": null,
+      "carpet_area_sqft": null,
+      "scope": null,
+      "completion_deadline": null,
+      "timeline_fit": "unclear",
+      "decision_maker": "unclear",
+      "budget_mentioned": "none",
+      "outcome": "incomplete",
+      "decline_reason": null,
+      "booked_slot_iso": null,
+      "callback_preference": null,
+      "notes_for_designer": null
+    },
+    "dispositions": { "price_mentioned": "No" },
+    "recording_url": "https://api.vaanivoice.ai/api/stream/inbound-1789665330-2b6c0f17",
+    "transcript": "[14:14:18] AGENT: Namaste, thank you for calling Aangan Studio. I'm Aangan's AI assistant, and this call is recorded so our designers have your details. How can I help you today?\n\n[14:14:26] USER: Hi, I wanted to inquire about —\n\n[14:14:41] AGENT: Sorry, I didn't catch that. Could you say that again?\n\n[14:14:58] AGENT: Hello, are you still there?"
+  }
+}

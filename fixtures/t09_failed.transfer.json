@@ -1,0 +1,8 @@
+{
+  "event": "human_transfer_failed",
+  "room_name": "inbound-1788860100-e7a2f909",
+  "transfer_type": "warm",
+  "phone_number": "+919800000999",
+  "reason": "no-answer",
+  "sip_status": "no_answer"
+}

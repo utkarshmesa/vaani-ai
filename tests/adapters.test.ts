@@ -179,7 +179,12 @@ describe('mock adapters', () => {
     expect(mocks.vaani.patches).toEqual([{ section: 'persona', agentId: 'agent', body: { a: 1 } }]);
   });
 
+  it('Cal.com mock holds the t01 and t13 fixture bookings by default', async () => {
+    expect(mocks.calcom.bookings.map((b) => b.uid)).toEqual(['mock-cal-t01', 'mock-cal-t13']);
+  });
+
   it('Cal.com mock filters its bookings by event type and window', async () => {
+    mocks.calcom.bookings = [];
     mocks.calcom.bookings.push(
       { uid: 'in', start: '2026-09-07T05:30:00.000Z', end: '2026-09-07T06:15:00.000Z', status: 'accepted', eventTypeId: 1001 },
       { uid: 'other-type', start: '2026-09-07T05:30:00.000Z', end: '2026-09-07T06:15:00.000Z', status: 'accepted', eventTypeId: 7 },

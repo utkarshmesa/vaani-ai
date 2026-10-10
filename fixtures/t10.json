@@ -1,0 +1,33 @@
+{
+  "event": "call_postprocessing",
+  "call_id": "inbound-1788957480-c40e1a10",
+  "timestamp": "2026-09-11T08:38:00.000000+00:00",
+  "data": {
+    "room_name": "inbound-1788957480-c40e1a10",
+    "call_id": "inbound-1788957480-c40e1a10",
+    "call_duration": 220482.1,
+    "end_reason": "Call ended",
+    "summary": "Amit has a 1BHK in Kharadi (about 550 sq ft) and wanted the kitchen and one bedroom done. He volunteered a budget that is well below what that scope would need; the agent explained this kindly without repeating the figure and closed the call.",
+    "entities": {
+      "caller_name": "Amit",
+      "enquiry_type": "new_enquiry",
+      "locality": "Kharadi",
+      "in_service_area": "yes",
+      "property_type": "apartment",
+      "carpet_area_sqft": "550",
+      "scope": "Kitchen and one bedroom",
+      "completion_deadline": null,
+      "timeline_fit": "unclear",
+      "decision_maker": "yes",
+      "budget_mentioned": "clearly_too_low",
+      "outcome": "declined",
+      "decline_reason": "budget",
+      "booked_slot_iso": null,
+      "callback_preference": null,
+      "notes_for_designer": "Caller's stated budget was well below the scope; politely declined."
+    },
+    "dispositions": { "price_mentioned": "No" },
+    "recording_url": "https://api.vaanivoice.ai/api/stream/inbound-1788957480-c40e1a10",
+    "transcript": "[14:04:12] AGENT: Namaste, thank you for calling Aangan Studio. I'm Aangan's AI assistant, and this call is recorded so our designers have your details. How can I help you today?\n\n[14:04:20] USER: Hi. I have a 1BHK in Kharadi, about 550 square feet. I want to do the kitchen and one bedroom.\n\n[14:04:30] AGENT: Thank you for calling. May I have your name?\n\n[14:04:33] USER: Amit.\n\n[14:04:36] AGENT: Thank you, Amit. A kitchen and a bedroom, designed and executed. Is that right?\n\n[14:04:41] USER: Yes. My budget is 1 to 1.5 lakh maximum for everything. Is that possible with you?\n\n[14:04:50] AGENT: Thank you for being upfront. The budget you mentioned would be well below what a project of that scope costs with us, so I wouldn't want to bring you to a consultation that doesn't work for you.\n\n[14:05:04] USER: Even for one bedroom?\n\n[14:05:07] AGENT: Even for one room, I'm afraid. Our projects include full design and execution, and I'd rather be honest with you now.\n\n[14:05:16] USER: Okay, thank you for being straight.\n\n[14:05:19] AGENT: This sounds like it may not be the right fit for us right now — but please do reach out if your timeline or scope changes. Thank you for calling, Amit."
+  }
+}

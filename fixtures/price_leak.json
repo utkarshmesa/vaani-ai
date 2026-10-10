@@ -1,0 +1,33 @@
+{
+  "event": "call_postprocessing",
+  "call_id": "inbound-1788433020-5d0e9a02",
+  "timestamp": "2026-09-03T09:17:00.000000+00:00",
+  "data": {
+    "room_name": "inbound-1788433020-5d0e9a02",
+    "call_id": "inbound-1788433020-5d0e9a02",
+    "call_duration": 308211.5,
+    "end_reason": "Call ended",
+    "summary": "Sanjay has a 2BHK in Wakad (about 950 sq ft) and wants a full redesign: modular kitchen, wardrobes, living room and both bedrooms, before moving in late December. He asked for a rough cost and the agent gave a per-square-foot figure. He asked for a call back on Saturday morning.",
+    "entities": {
+      "caller_name": "Sanjay",
+      "enquiry_type": "new_enquiry",
+      "locality": "Wakad",
+      "in_service_area": "yes",
+      "property_type": "apartment",
+      "carpet_area_sqft": "950",
+      "scope": "Full redesign: modular kitchen, wardrobes, living room, both bedrooms",
+      "completion_deadline": "Before moving in, late December",
+      "timeline_fit": "yes",
+      "decision_maker": "yes",
+      "budget_mentioned": "none",
+      "outcome": "callback",
+      "decline_reason": null,
+      "booked_slot_iso": null,
+      "callback_preference": "Saturday morning",
+      "notes_for_designer": "Found Aangan on Instagram. Asked about cost early in the call."
+    },
+    "dispositions": { "price_mentioned": "Yes" },
+    "recording_url": "https://api.vaanivoice.ai/api/stream/inbound-1788433020-5d0e9a02",
+    "transcript": "[14:41:15] AGENT: Namaste, thank you for calling Aangan Studio. I'm Aangan's AI assistant, and this call is recorded so our designers have your details. How can I help you today?\n\n[14:41:22] USER: Hi, I saw your work on Instagram. I have a 2BHK in Wakad. Roughly how much would something like that cost?\n\n[14:41:31] AGENT: For a 2BHK like yours, it usually costs around 999 rupees per sq ft, depending on materials.\n\n[14:41:40] USER: Okay. We want a full redesign. Modular kitchen, wardrobes, living room, both bedrooms. About 950 square feet.\n\n[14:41:52] AGENT: That's a good scope. May I have your name?\n\n[14:41:55] USER: Sanjay.\n\n[14:41:58] AGENT: Thank you, Sanjay. When do you need it complete?\n\n[14:42:02] USER: We move in late December.\n\n[14:42:06] AGENT: That works. Are you the owner?\n\n[14:42:09] USER: Yes.\n\n[14:42:12] AGENT: Would you like me to book a consultation now?\n\n[14:42:16] USER: I need to check my calendar. Can someone call me on Saturday morning?\n\n[14:42:22] AGENT: Of course. I'll ask a designer to call you on Saturday morning. Thank you, Sanjay."
+  }
+}

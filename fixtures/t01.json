@@ -1,0 +1,33 @@
+{
+  "event": "call_postprocessing",
+  "call_id": "inbound-1788326860-3fa91c01",
+  "timestamp": "2026-09-02T04:57:40.000000+00:00",
+  "data": {
+    "room_name": "inbound-1788326860-3fa91c01",
+    "call_id": "inbound-1788326860-3fa91c01",
+    "call_duration": 252318.4,
+    "end_reason": "Call ended",
+    "summary": "Priya called on a referral from Shruti Joshi to redesign her 3BHK apartment in Dahanukar Colony, Kothrud (about 1,400 sq ft carpet): kitchen, living room and both bedrooms. She wants it completed by March, and she and her husband are the owners and decision-makers. A studio consultation was booked for Monday 7 September at 11 am.",
+    "entities": {
+      "caller_name": "Priya",
+      "enquiry_type": "new_enquiry",
+      "locality": "Kothrud, Dahanukar Colony",
+      "in_service_area": "yes",
+      "property_type": "apartment",
+      "carpet_area_sqft": "1400",
+      "scope": "Full redesign: kitchen, living room and both bedrooms",
+      "completion_deadline": "By March, no rush",
+      "timeline_fit": "yes",
+      "decision_maker": "yes",
+      "budget_mentioned": "none",
+      "outcome": "booked",
+      "decline_reason": null,
+      "booked_slot_iso": "2026-09-07T11:00:00+05:30",
+      "callback_preference": null,
+      "notes_for_designer": "Referred by Shruti Joshi, whose Aundh flat Aangan did. Bought two years ago, still a builder finish. Husband knows about the call and is happy to go ahead."
+    },
+    "dispositions": { "price_mentioned": "No" },
+    "recording_url": "https://api.vaanivoice.ai/api/stream/inbound-1788326860-3fa91c01",
+    "transcript": "[10:23:28] AGENT: Namaste, thank you for calling Aangan Studio. I'm Aangan's AI assistant, and this call is recorded so our designers have your details. How can I help you today?\n\n[10:23:36] USER: Hi, I'm Priya. I got your number from a friend, Shruti Joshi. She had her flat done by you in Aundh.\n\n[10:23:44] AGENT: Thank you for calling, Priya, and please thank Shruti for us. What are you looking to do?\n\n[10:23:50] USER: We have a 3BHK in Kothrud, Dahanukar Colony. We bought it two years ago and it still looks like the builder flat. We want to redo the whole thing. Kitchen, living room, both bedrooms.\n\n[10:24:05] AGENT: That sounds like a complete redesign. Roughly how big is the apartment?\n\n[10:24:09] USER: About 1,400 square feet carpet.\n\n[10:24:13] AGENT: Thank you. And when would you like the project to be complete?\n\n[10:24:17] USER: We'd like to be done by March. We're in no rush.\n\n[10:24:22] AGENT: That works well for us. Are you the owner, or will someone else be deciding with you?\n\n[10:24:28] USER: Myself and my husband. He knows I'm calling and is happy to go ahead.\n\n[10:24:34] AGENT: Lovely. I can book a free consultation with one of our designers. I have Monday 7 September at 11 am, or Tuesday 8 September at 4 pm. Which suits you?\n\n[10:24:44] USER: Monday at 11 is good.\n\n[10:24:47] AGENT: Could I have an email address for the booking?\n\n[10:24:51] USER: priya dot k at example mail dot com.\n\n[10:24:58] AGENT: That's p, r, i, y, a, dot, k, at examplemail dot com. Is that right?\n\n[10:25:04] USER: Yes.\n\n[10:25:12] AGENT: You're booked for a studio consultation on Monday 7 September at 11 am. The booking is confirmed.\n\n[10:25:18] USER: Perfect, thank you.\n\n[10:25:21] AGENT: Thank you, Priya. Your designer will meet you on Monday 7 September at 11 am and will be in touch before then with anything they need."
+  }
+}

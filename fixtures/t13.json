@@ -1,0 +1,33 @@
+{
+  "event": "call_postprocessing",
+  "call_id": "inbound-1789541730-8b27d413",
+  "timestamp": "2026-09-16T06:55:30.000000+00:00",
+  "data": {
+    "room_name": "inbound-1789541730-8b27d413",
+    "call_id": "inbound-1789541730-8b27d413",
+    "call_duration": 368104.7,
+    "end_reason": "Call ended",
+    "summary": "Kavita wants to redo her 3BHK flat in Aundh (about 1,100 sq ft): kitchen, wardrobes in both bedrooms and the living room, complete by end of February. She asked about cost twice; the agent explained pricing depends on site, materials and scope and is covered at the free consultation. She is the owner. A consultation was booked for Friday 18 September at 4 pm.",
+    "entities": {
+      "caller_name": "Kavita",
+      "enquiry_type": "new_enquiry",
+      "locality": "Aundh",
+      "in_service_area": "yes",
+      "property_type": "apartment",
+      "carpet_area_sqft": "1100",
+      "scope": "Kitchen, wardrobes in both bedrooms, living room",
+      "completion_deadline": "End of February",
+      "timeline_fit": "yes",
+      "decision_maker": "yes",
+      "budget_mentioned": "none",
+      "outcome": "booked",
+      "decline_reason": null,
+      "booked_slot_iso": "2026-09-18T16:00:00+05:30",
+      "callback_preference": null,
+      "notes_for_designer": "Asked twice for a rough cost before agreeing to book; expect pricing questions early in the consultation."
+    },
+    "dispositions": { "price_mentioned": "No" },
+    "recording_url": "https://api.vaanivoice.ai/api/stream/inbound-1789541730-8b27d413",
+    "transcript": "[12:19:20] AGENT: Namaste, thank you for calling Aangan Studio. I'm Aangan's AI assistant, and this call is recorded so our designers have your details. How can I help you today?\n\n[12:19:27] USER: Hi. I want to redo my flat in Aundh. 3BHK, about 1,100 square feet. What might it cost?\n\n[12:19:36] AGENT: Pricing depends on the site, the materials you choose, and the scope — your designer will walk you through it in detail at the consultation. I can book that for you right now if you'd like.\n\n[12:19:47] USER: Maybe. What would you be doing?\n\n[12:19:50] AGENT: Tell me what you're planning, and I'll make sure the designer has it. Which rooms are you thinking of?\n\n[12:19:56] USER: Kitchen, wardrobes in both bedrooms, living room. But seriously, can't you give me even a rough range? I just want to know if we're in the same ballpark.\n\n[12:20:08] AGENT: I understand why you'd want that. Any number I give you now could be far off, because it really depends on your site and the materials you pick. The consultation is free, and your designer gives you a proper figure at the end of it.\n\n[12:20:22] USER: Fine. Let's book then.\n\n[12:20:25] AGENT: Wonderful. May I have your name?\n\n[12:20:28] USER: Kavita.\n\n[12:20:31] AGENT: Thank you, Kavita. When would you need the project complete?\n\n[12:20:36] USER: By the end of February.\n\n[12:20:40] AGENT: That works. And are you the owner of the flat?\n\n[12:20:43] USER: Yes, it's mine.\n\n[12:20:47] AGENT: I have Thursday 17 September at 11 am, or Friday 18 September at 4 pm. Which would you like?\n\n[12:20:55] USER: Friday at 4.\n\n[12:20:58] AGENT: Could I have an email address for the booking?\n\n[12:21:03] USER: kavita dot a at example mail dot com.\n\n[12:21:10] AGENT: That's k, a, v, i, t, a, dot, a, at examplemail dot com. Correct?\n\n[12:21:15] USER: Yes.\n\n[12:21:22] AGENT: You're booked for a studio consultation on Friday 18 September at 4 pm. The booking is confirmed.\n\n[12:21:28] USER: Thanks.\n\n[12:21:30] AGENT: Thank you, Kavita. Your designer will see you on Friday 18 September at 4 pm and will go through the details, including pricing, with you then."
+  }
+}
