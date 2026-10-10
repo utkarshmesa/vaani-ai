@@ -21,6 +21,8 @@ export interface VaaniCallHistoryItem {
 export interface VaaniAdapter {
   /** Pages through call-history (no server-side filter exists) looking for callId. null if not listed yet. */
   findCall(callId: string, opts?: { maxPages?: number }): Promise<VaaniCallHistoryItem | null>;
+  /** Same, for several calls in one scan (cron cost retry). Missing calls are absent from the map. */
+  findCalls(callIds: string[], opts?: { maxPages?: number }): Promise<Map<string, VaaniCallHistoryItem>>;
   updatePersona(agentId: string, body: unknown): Promise<unknown>;
   updateTraining(agentId: string, body: unknown): Promise<unknown>;
   updateExperience(agentId: string, body: unknown): Promise<unknown>;

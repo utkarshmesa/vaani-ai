@@ -1,6 +1,6 @@
 import { cannedBrief } from '@/lib/brief/canned';
 import type {
-  CalBooking, CalcomAdapter, GeminiAdapter, GeminiRequest, OutgoingEmail, ResendAdapter, VaaniAdapter,
+  CalBooking, CalcomAdapter, GeminiAdapter, GeminiRequest, OutgoingEmail, ResendAdapter, VaaniAdapter, VaaniCallHistoryItem,
 } from './types';
 
 /**
@@ -66,6 +66,14 @@ function createMockVaani(): MockVaani {
         call_cost: m.fixedCost,
         post_processing_status: 'completed',
       };
+    },
+    async findCalls(callIds) {
+      const out = new Map<string, VaaniCallHistoryItem>();
+      for (const id of callIds) {
+        const item = await mocks.vaani.findCall(id);
+        if (item) out.set(id, item);
+      }
+      return out;
     },
     async updatePersona(agentId, body) { mocks.vaani.patches.push({ section: 'persona', agentId, body }); return { ok: true }; },
     async updateTraining(agentId, body) { mocks.vaani.patches.push({ section: 'training', agentId, body }); return { ok: true }; },

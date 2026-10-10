@@ -237,3 +237,30 @@ describe('Gemini adapter key fallback', () => {
     expect(geminiKeys(' k1, k2 ,,k3 ')).toEqual(['k1', 'k2', 'k3']);
   });
 });
+
+describe('Vaani adapter findCalls (batch, for the cron cost retry)', () => {
+  it('scans call-history once for several calls and stops when all are found', async () => {
+    const fetch = vi.fn(async (url: string | URL | Request, _init?: RequestInit) => {
+      const page = Number(new URL(String(url)).searchParams.get('page'));
+      const data = page === 1 ? [historyRow('a'), historyRow('x')] : [historyRow('b', { call_cost: 3 })];
+      return jsonResponse({ data, pagination: { has_next: page < 5 } });
+    });
+    const found = await createVaaniAdapter({ apiKey: 'k', fetch }).findCalls(['a', 'b']);
+    expect([...found.keys()].sort()).toEqual(['a', 'b']);
+    expect(found.get('b')?.call_cost).toBe(3);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('returns what it found within maxPages', async () => {
+    const fetch = vi.fn(async () => jsonResponse({ data: [historyRow('a')], pagination: { has_next: true } }));
+    const found = await createVaaniAdapter({ apiKey: 'k', fetch }).findCalls(['a', 'missing'], { maxPages: 2 });
+    expect([...found.keys()]).toEqual(['a']);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('mock findCalls honours notListed', async () => {
+    mocks.vaani.notListed.add('late');
+    const found = await mocks.vaani.findCalls(['ok', 'late']);
+    expect([...found.keys()]).toEqual(['ok']);
+  });
+});
