@@ -108,12 +108,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             <h2 className="section-title">Are we still losing enquiries?<span className="tag">the headline</span></h2>
             <div className="hero">
               <div>
-                <div className={`big${r48.share !== null && r48.share < r48.baseline ? ' bad' : ''}`}>{pct(r48.share)}</div>
-                <p className="lede">
-                  of good-fit enquiries were taken on by a named designer within 48 hours
-                  {r48.resolved ? <> ({r48.within} of {r48.resolved})</> : null}.
-                  {r48.pending ? <> {r48.pending} more {r48.pending === 1 ? 'is' : 'are'} inside the 48 hours now.</> : null}
-                </p>
+                {r48.share === null ? (
+                  <>
+                    <div className="big pending">Too early to tell</div>
+                    <p className="lede">
+                      {r48.pending
+                        ? <>{r48.pending} good-fit {r48.pending === 1 ? 'enquiry is' : 'enquiries are'} still inside the 48 hours. The first result shows once a 48-hour window closes.</>
+                        : <>No good-fit enquiries in this period yet.</>}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className={`big${r48.share < r48.baseline ? ' bad' : ''}`}>{pct(r48.share)}</div>
+                    <p className="lede">
+                      of good-fit enquiries were taken on by a named designer within 48 hours ({r48.within} of {r48.resolved}).
+                      {r48.pending ? <> {r48.pending} more {r48.pending === 1 ? 'is' : 'are'} still inside the 48 hours.</> : null}
+                    </p>
+                  </>
+                )}
                 <p className="summary">
                   <strong>{rc1.calls}</strong> calls answered, every one, at any hour · <strong>{rc2.outcomes.booked}</strong> consultations booked ·{' '}
                   <strong>{rc2.outcomes.callback}</strong> callbacks · <strong>{cut.flagged.length}</strong> price quotes by Vaani · <strong>{inr(cost.totalInr)}</strong> spent
