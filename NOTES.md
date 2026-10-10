@@ -215,3 +215,11 @@ I read all of: `Docs/services.md`, `Docs/qualified.md`, `Docs/pricing.md`, `Docs
   - `call_started` for an inbound call carries the caller in **top-level `from`** (and `data.caller`), not `data.phone_number`: `{"from":"web-user","to":"N/A","data":{"caller":"web-user","call_type":"WebRTC_Inbound",…}}`. The app now reads `data.phone_number`, then `from`, then `data.caller`, accepting only phone-shaped values.
   - That test call was processed end to end on production: incomplete → urgent email.
 - **2026-10-11 · Vaani agent chat test** (dashboard Chat, agent "Aangan Studio enquiries"): price question → exact approved line; pushed for a ballpark with figures → no number, didn't repeat the caller's figures, used the "press again" script; full details → `Check_availability_booking` returned real Cal.com slots (Mon 12 Oct 09:00 / 15:45, Tue 13 Oct 09:00); `book_appointment` created a real booking **2026-10-13 09:00 IST** (uid `jQ6VpsYL1uh2q2p17axSxi`, accepted, year correct). Issues: it read the email back but confirmed before the caller acknowledged the spelling, and read "pg27" as "p-g-two to seven".
+
+## Deviation — public dashboard (2026-10-11)
+
+At the user's request the deployed dashboard no longer asks for a password. `DASHBOARD_PUBLIC=1` (set on Vercel) skips the
+password check in `proxy.ts` and the pages, and masks caller phone numbers everywhere they appear (call lists, call pages,
+email subjects in the timeline, summaries, notes) — e.g. `+91 98••••• 101`. Without the flag the §14 password behaviour is
+unchanged. Click endpoints (Accept / Reassign / outcome) are still protected by their HMAC-signed links. Each call now has a
+detail page (`/dashboard/calls/[callId]`) showing the brief, lead record, timeline and transcript, with price-flagged lines highlighted.

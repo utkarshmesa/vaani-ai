@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { isPublicDashboard } from '@/lib/dashboard/publicMode';
 import { isValidSession, SESSION_COOKIE } from '@/lib/dashboard/session';
 
 /**
@@ -6,6 +7,7 @@ import { isValidSession, SESSION_COOKIE } from '@/lib/dashboard/session';
  * The dashboard page checks the session again itself (Next.js recommends proxy only for optimistic checks).
  */
 export async function proxy(req: NextRequest) {
+  if (isPublicDashboard()) return NextResponse.next();
   if (await isValidSession(req.cookies.get(SESSION_COOKIE)?.value)) return NextResponse.next();
   const login = new URL('/login', req.url);
   login.searchParams.set('next', req.nextUrl.pathname + req.nextUrl.search);

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { processEvent } from '@/lib/pipeline/processEvent';
 import { setNow } from '@/lib/clock';
@@ -12,6 +12,7 @@ vi.mock('next/headers', () => ({
 const redirected = vi.hoisted(() => ({ to: null as string | null }));
 vi.mock('next/navigation', () => ({
   redirect: (to: string) => { redirected.to = to; throw new Error('NEXT_REDIRECT'); },
+  notFound: () => { throw new Error('NEXT_NOT_FOUND'); },
 }));
 
 const { default: DashboardPage } = await import('@/app/dashboard/page');
@@ -20,6 +21,15 @@ async function render(params: Record<string, string>) {
   const jsx = await DashboardPage({ searchParams: Promise.resolve(params) });
   return renderToStaticMarkup(jsx);
 }
+async function seed() {
+  for (const name of FIXTURE_NAMES) {
+    const p = loadFixture(name);
+    setNow(p.timestamp);
+    await processEvent(p, { lookupDelayMs: 0 });
+  }
+  setNow('2026-09-30T12:00:00.000Z');
+}
+afterEach(() => { delete process.env.DASHBOARD_PUBLIC; });
 
 describe('/dashboard page', () => {
   it('redirects to /login without a session (defence in depth behind the proxy)', async () => {
@@ -31,12 +41,7 @@ describe('/dashboard page', () => {
   it('renders every section for the fixture set', async () => {
     expect(SESSION_COOKIE).toBe('aangan_dashboard');
     cookieValue.current = await sessionToken();
-    for (const name of FIXTURE_NAMES) {
-      const p = loadFixture(name);
-      setNow(p.timestamp);
-      await processEvent(p, { lookupDelayMs: 0 });
-    }
-    setNow('2026-09-30T12:00:00.000Z');
+    await seed();
     const html = await render({ from: '2026-09-01', to: '2026-09-30' });
 
     for (const heading of ['Calls answered', 'Lead records', 'Designer follow-through', 'Price check', 'Cost', 'Needs attention', 'All calls']) {
@@ -47,5 +52,36 @@ describe('/dashboard page', () => {
     expect(html).toContain('Transfer failed — call back urgently');
     expect(html).toContain('Sheetal Deshpande');
     expect(html).toContain('₹87.90'); // total cost
+    expect(html).toContain('+919800000000'); // full numbers behind the password
+    expect(html).toContain('Sign out');
+  });
+
+  it('links every call to its detail page', async () => {
+    cookieValue.current = await sessionToken();
+    await seed();
+    const html = await render({ from: '2026-09-01', to: '2026-09-30' });
+    for (const name of FIXTURE_NAMES) {
+      expect(html, name).toContain(`href="/dashboard/calls/${encodeURIComponent(loadFixture(name).call_id)}"`);
+    }
+  });
+
+  it('offers quick period links', async () => {
+    cookieValue.current = await sessionToken();
+    setNow('2026-10-11T06:00:00.000Z');
+    const html = await render({});
+    expect(html).toContain('href="/dashboard?from=2026-09-01&amp;to=2026-09-30"'); // last month
+    expect(html).toContain('href="/dashboard?from=2026-10-05&amp;to=2026-10-11"'); // last 7 days
+    expect(html).toContain('No calls in this period');
+  });
+
+  it('public mode: opens without a session, masks phone numbers, no sign-out', async () => {
+    process.env.DASHBOARD_PUBLIC = '1';
+    cookieValue.current = undefined;
+    await seed();
+    const html = await render({ from: '2026-09-01', to: '2026-09-30' });
+    expect(html).toContain('Calls answered');
+    expect(html).not.toContain('+919800000000');
+    expect(html).toContain('+91 98••••• 000');
+    expect(html).not.toContain('Sign out');
   });
 });

@@ -1,16 +1,15 @@
 import type { ReactNode } from 'react';
+import './globals.css';
 
 export const metadata = {
   title: 'Aangan Leads',
-  description: 'Vaani enquiry handling for Aangan Studio',
+  description: 'Every call to Aangan Studio answered by Vaani, turned into a lead and chased to a designer.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body style={{ fontFamily: 'system-ui, sans-serif', margin: '0 auto', maxWidth: 960, padding: 16 }}>
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

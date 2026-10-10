@@ -51,3 +51,18 @@ export function parseRange(params: { from?: unknown; to?: unknown }): DateRange 
     : `${formatInTimeZone(from, TZ, 'd MMM yyyy')} – ${formatInTimeZone(startOfIstDay(toStr), TZ, 'd MMM yyyy')}`;
   return { from, to, fromStr, toStr, label, isCurrentMonth };
 }
+
+/** Quick period links for the dashboard header (IST calendar dates). */
+export function presetRanges(): { label: string; from: string; to: string }[] {
+  const today = istDate(now());
+  const [y, m] = today.split('-').map(Number);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const monthEnd = (yy: number, mm: number) => new Date(Date.UTC(yy, mm, 0)).getUTCDate();
+  const [py, pm] = m === 1 ? [y - 1, 12] : [y, m - 1];
+  const weekAgo = istDate(new Date(startOfIstDay(today).getTime() - 6 * DAY_MS));
+  return [
+    { label: 'This month', from: `${y}-${pad(m)}-01`, to: `${y}-${pad(m)}-${pad(monthEnd(y, m))}` },
+    { label: 'Last month', from: `${py}-${pad(pm)}-01`, to: `${py}-${pad(pm)}-${pad(monthEnd(py, pm))}` },
+    { label: 'Last 7 days', from: weekAgo, to: today },
+  ];
+}

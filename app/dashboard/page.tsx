@@ -1,188 +1,194 @@
-import type { ReactNode } from 'react';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { requireDashboardAccess, showPhone } from '@/lib/dashboard/access';
 import { loadDashboard } from '@/lib/dashboard/load';
 import type { Metrics } from '@/lib/dashboard/metrics';
 import { parseRange } from '@/lib/dashboard/range';
-import { isValidSession, SESSION_COOKIE } from '@/lib/dashboard/session';
 import { humanise } from '@/lib/format';
 import { formatIst } from '@/lib/time';
+import { LEAD_OUTCOMES } from '@/lib/db/types';
+import {
+  Badge, Kpi, Meter, OUTCOMES, OutcomeBadge, Section, TopBar, callHref, inr, mins, num, pct,
+} from './ui';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Dashboard · Aangan Leads' };
 
-const inr = (n: number | null) =>
-  n === null ? '—' : `₹${n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const pct = (n: number | null) => (n === null ? '—' : `${Math.round(n * 100)}%`);
-const mins = (n: number | null) => (n === null ? '—' : `${Math.round(n * 10) / 10} min`);
-const num = (n: number) => n.toLocaleString('en-IN', { maximumFractionDigits: 2 });
-
-const CSS = `
-.dash{font-size:14px}
-.dash h1{font-size:22px;margin:0}
-.dash h2{font-size:16px;margin:28px 0 8px;padding-bottom:4px;border-bottom:1px solid #ddd}
-.dash h2 small{font-weight:400;color:#777;font-size:12px;margin-left:6px}
-.tiles{display:flex;flex-wrap:wrap;gap:10px}
-.tile{border:1px solid #e3e3e3;border-radius:8px;padding:10px 14px;min-width:140px}
-.tile b{display:block;font-size:20px}
-.tile span{color:#666;font-size:12px}
-.dash table{border-collapse:collapse;width:100%;margin-top:6px}
-.dash th,.dash td{text-align:left;padding:6px 8px;border-bottom:1px solid #eee;vertical-align:top}
-.dash th{color:#555;font-weight:600;font-size:12px}
-.ok{color:#1f6f4a}.bad{color:#c53030}.muted{color:#888}
-.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.dash form.filter{display:flex;gap:8px;align-items:end;flex-wrap:wrap;margin:12px 0}
-.dash form.filter label{display:flex;flex-direction:column;font-size:12px;color:#555}
-.dash input,.dash button{font-size:14px;padding:6px 8px}
-`;
-
-function Tile({ value, label }: { value: ReactNode; label: string }) {
-  return <div className="tile"><b>{value}</b><span>{label}</span></div>;
-}
-
-function Section({ title, tag, children }: { title: string; tag: string; children: ReactNode }) {
-  return <section><h2>{title}<small>{tag}</small></h2>{children}</section>;
+function reasonTone(r: string): 'bad' | 'warn' | 'info' {
+  if (/price|transfer failed|error/i.test(r)) return 'bad';
+  if (/not accepted|dropped|after hours/i.test(r)) return 'warn';
+  return 'info';
 }
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
-  // Checked again here: the proxy is only an optimistic gate.
-  const store = await cookies();
-  if (!(await isValidSession(store.get(SESSION_COOKIE)?.value))) redirect('/login?next=%2Fdashboard');
+  await requireDashboardAccess('/dashboard');
 
   const q = await searchParams;
   const m: Metrics = await loadDashboard(parseRange({ from: q.from, to: q.to }));
   const { rc1, rc2, rc3, cut, cost } = m;
+  const totalOutcomes = LEAD_OUTCOMES.reduce((s, o) => s + rc2.outcomes[o], 0);
+  const creditsShare = cost.creditsRemaining + cost.creditsUsedAllTime > 0
+    ? cost.creditsRemaining / (cost.creditsRemaining + cost.creditsUsedAllTime) : null;
 
   return (
-    <main className="dash">
-      <style>{CSS}</style>
-      <div className="bar">
-        <div>
-          <h1>Aangan Leads</h1>
-          <span className="muted">{m.range.label} · times in IST</span>
+    <>
+      <TopBar range active={{ from: m.range.fromStr, to: m.range.toStr }} />
+      <main className="wrap">
+        <div className="page-head">
+          <h1>{m.range.label}</h1>
+          <span className="sub">times in IST · working hours Mon–Fri 10:00–19:00</span>
         </div>
-        <form method="post" action="/api/logout"><button type="submit">Sign out</button></form>
-      </div>
 
-      <form className="filter" method="get">
-        <label>From<input type="date" name="from" defaultValue={m.range.fromStr} /></label>
-        <label>To<input type="date" name="to" defaultValue={m.range.toStr} /></label>
-        <button type="submit">Show</button>
-        <a href="/dashboard">This month</a>
-      </form>
-
-      <Section title="Calls answered" tag="RC1 · coverage">
-        <div className="tiles">
-          <Tile value={rc1.calls} label="calls answered by Vaani" />
-          <Tile value={`${rc1.afterHours} (${pct(rc1.afterHoursShare)})`} label="outside 10:00–19:00 Mon–Fri" />
+        {/* Headline numbers */}
+        <div className="grid kpis">
+          <Kpi label="Calls answered" tag="RC1" value={rc1.calls} foot={`${rc1.afterHours} after hours (${pct(rc1.afterHoursShare)})`} />
+          <Kpi label="Consultations booked" tag="RC2" value={rc2.outcomes.booked} foot={`${rc2.outcomes.callback} callbacks`} />
+          <Kpi label="Complete lead records" tag="RC2" value={pct(rc2.completeShare)} foot={`${rc2.complete} of ${rc1.calls} calls`} />
+          <Kpi label="Accepted within 30 min" tag="RC3" value={pct(rc3.acceptedWithin30Share)}
+            foot={`median ${mins(rc3.medianWorkingMinutesToAccept)} (working)`} />
+          <Kpi label="Price quotes by Vaani" tag="CUT" value={cut.flagged.length} tone={cut.flagged.length ? 'bad' : 'good'}
+            foot={cut.flagged.length ? 'review below' : 'target 0 — on track'} />
+          <Kpi label="Cost of the tool" tag="Cost" value={inr(cost.totalInr)} foot={`${inr(cost.perCall)} per call`} />
         </div>
-      </Section>
 
-      <Section title="Lead records" tag="RC2 · one structured record per call">
-        <div className="tiles">
-          <Tile value={pct(rc2.completeShare)} label={`complete lead records (${rc2.complete} of ${rc1.calls})`} />
-          <Tile value={rc2.outcomes.booked} label="consultations booked" />
-          <Tile value={rc2.outcomes.callback} label="callbacks" />
-          <Tile value={rc2.outcomes.declined} label="declined" />
-          <Tile value={rc2.outcomes.existing_client_transferred + rc2.outcomes.transfer_failed} label={`existing clients (${rc2.outcomes.transfer_failed} transfer failed)`} />
-          <Tile value={rc2.outcomes.incomplete} label="incomplete (dropped)" />
-          {rc2.outcomes.other ? <Tile value={rc2.outcomes.other} label="other" /> : null}
+        <div className="stack">
+          {/* Needs attention — the actionable list comes first */}
+          <Section title="Needs attention" tag={`${m.attention.length}`} hint="Urgent call-backs, dropped calls, bookings to fix, price flags and leads nobody has accepted.">
+            {m.attention.length ? (
+              <div className="attention">
+                {m.attention.map((a) => (
+                  <a key={a.callId} className="att" href={callHref(a.callId)}>
+                    <span>
+                      <span className="who">{a.callerName ?? 'Unknown caller'}</span>
+                      <span className="meta"> · {showPhone(a.number) ?? 'number pending'}</span>
+                    </span>
+                    <span className="meta">{formatIst(a.at)}</span>
+                    <span className="reasons">
+                      {a.reasons.map((r, i) => <Badge key={i} tone={reasonTone(r)}>{r}</Badge>)}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            ) : <div className="ok-banner">✓ Nothing needs attention.</div>}
+          </Section>
+
+          <div className="grid two">
+            <Section title="Calls answered" tag="RC1 · coverage" hint="Vaani answers every call, any hour.">
+              <div className="stats">
+                <div className="stat"><div className="n">{rc1.calls}</div><div className="l">calls answered</div></div>
+                <div className="stat"><div className="n">{rc1.calls - rc1.afterHours}</div><div className="l">in working hours</div></div>
+                <div className="stat"><div className="n">{rc1.afterHours}</div><div className="l">after hours / weekends</div></div>
+              </div>
+              <Meter value={rc1.afterHoursShare} />
+              <div className="public-note">{pct(rc1.afterHoursShare)} of calls arrived when the front desk is closed.</div>
+            </Section>
+
+            <Section title="Lead records" tag="RC2 · one record per call" hint="Outcome of every call, as one structured record.">
+              {totalOutcomes ? (
+                <>
+                  <div className="stackbar" role="img" aria-label="Outcome breakdown">
+                    {LEAD_OUTCOMES.filter((o) => rc2.outcomes[o]).map((o) => (
+                      <span key={o} className={`fill-${OUTCOMES[o].tone}`} style={{ width: `${(rc2.outcomes[o] / totalOutcomes) * 100}%` }} title={`${OUTCOMES[o].label}: ${rc2.outcomes[o]}`} />
+                    ))}
+                  </div>
+                  <div className="legend">
+                    {LEAD_OUTCOMES.filter((o) => rc2.outcomes[o]).map((o) => (
+                      <span key={o}><i className={`fill-${OUTCOMES[o].tone}`} />{OUTCOMES[o].label} <strong>{rc2.outcomes[o]}</strong></span>
+                    ))}
+                  </div>
+                </>
+              ) : <div className="public-note">No calls in this period.</div>}
+              <div style={{ marginTop: 14 }}>
+                <div className="public-note">Complete lead records: <strong>{rc2.complete} of {rc1.calls}</strong></div>
+                <Meter value={rc2.completeShare} tone="good" />
+              </div>
+              {rc2.declineReasons.length ? (
+                <p className="public-note" style={{ marginBottom: 0 }}>
+                  Top decline reasons: {rc2.declineReasons.map((r) => `${humanise(r.reason)} (${r.count})`).join(' · ')}
+                </p>
+              ) : null}
+            </Section>
+
+            <Section title="Designer follow-through" tag="RC3 · chased until they act" hint="Named designer, Accept link, 15-min reminder, 30-min escalation.">
+              <div className="stats">
+                <div className="stat"><div className="n">{rc3.handedOff}</div><div className="l">sent to a designer</div></div>
+                <div className="stat"><div className="n">{mins(rc3.medianWorkingMinutesToAccept)}</div><div className="l">median to Accept (working)</div></div>
+                <div className="stat"><div className="n">{rc3.escalations}</div><div className="l">escalations</div></div>
+                <div className="stat"><div className="n">{rc3.reassignments}</div><div className="l">reassignments</div></div>
+              </div>
+              <div style={{ marginTop: 14 }}>
+                <div className="public-note">Accepted within 30 working minutes: <strong>{rc3.acceptedWithin30} of {rc3.eligibleForWithin30}</strong></div>
+                <Meter value={rc3.acceptedWithin30Share} tone="good" />
+              </div>
+              <p className="public-note" style={{ marginBottom: 0 }}>
+                Outcomes logged: <strong>{rc3.outcomesLogged}</strong> ({rc3.outcomeRequests} requested)
+                {rc3.outcomesLogged ? ` — ${Object.entries(rc3.consultationOutcomes).filter(([, n]) => n).map(([k, n]) => `${humanise(k)} ${n}`).join(' · ')}` : ''}
+              </p>
+            </Section>
+
+            <Section title="Price check" tag="CUT · target 0" hint="Every agent line is scanned for prices; Vaani must never quote one.">
+              {cut.flagged.length ? (
+                cut.flagged.map((f) => (
+                  <div key={f.callId} style={{ marginBottom: 10 }}>
+                    <a href={callHref(f.callId)}><strong>{f.callerName ?? 'Unknown caller'}</strong></a>
+                    <span className="public-note"> · {formatIst(f.at)}</span>
+                    {f.lines.map((l, i) => <div key={i} className="quote">&ldquo;{l}&rdquo;</div>)}
+                  </div>
+                ))
+              ) : <div className="ok-banner">✓ No price quoted on any call in this period.</div>}
+            </Section>
+          </div>
+
+          <Section title="Cost" tag="what the tool costs to run" hint="Vaani call minutes plus Gemini briefs.">
+            <div className="stats">
+              <div className="stat"><div className="n">{inr(cost.totalInr)}</div><div className="l">total (Vaani {inr(cost.vaaniInr)} · Gemini {inr(cost.geminiInr)})</div></div>
+              <div className="stat"><div className="n">{inr(cost.perCall)}</div><div className="l">per call</div></div>
+              <div className="stat"><div className="n">{inr(cost.perMinute)}</div><div className="l">per minute ({num(cost.totalMinutes)} min)</div></div>
+              <div className="stat"><div className="n">{inr(cost.perBooked)}</div><div className="l">per booked consultation ({cost.bookedConsultations})</div></div>
+              <div className="stat"><div className="n">{inr(cost.perProposal)}</div><div className="l">per won proposal ({cost.proposals})</div></div>
+              <div className="stat"><div className="n">{inr(cost.projectedMonthEnd)}</div><div className="l">projected month-end</div></div>
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <div className="public-note">Vaani credits remaining: <strong>{num(cost.creditsRemaining)}</strong> ({num(cost.creditsUsedAllTime)} used)</div>
+              <Meter value={creditsShare} tone="good" />
+            </div>
+            {cost.unknownCostCalls ? <p className="public-note">{cost.unknownCostCalls} call(s) have no Vaani cost yet; it is retried every minute.</p> : null}
+            {cost.estimatedCostCalls ? (
+              <p className="public-note" style={{ marginBottom: 0 }}>
+                {cost.estimatedCostCalls} call(s) use an estimated Vaani cost (call length × the per-minute rate), because Vaani&apos;s
+                call-history API is unavailable. Real costs replace the estimates automatically if it recovers.
+              </p>
+            ) : null}
+          </Section>
+
+          <Section title="All calls" tag={`${m.calls.length} in range`}>
+            {m.calls.length ? (
+              <div className="table-wrap">
+                <table className="calls">
+                  <thead>
+                    <tr><th>When</th><th>Caller</th><th>Locality</th><th>Outcome</th><th>Designer</th><th>Accepted</th><th className="num">Length</th><th className="num">Cost</th></tr>
+                  </thead>
+                  <tbody>
+                    {m.calls.map((c) => (
+                      <tr key={c.callId}>
+                        <td>{formatIst(c.at)}</td>
+                        <td>
+                          <a href={callHref(c.callId)}><strong>{c.callerName ?? 'Unknown caller'}</strong></a>
+                          <div className="sub">{showPhone(c.number) ?? 'number pending'}</div>
+                        </td>
+                        <td>{c.locality ?? '—'}</td>
+                        <td><OutcomeBadge outcome={c.outcome} />{c.priceFlag ? <> <Badge tone="bad">price flag</Badge></> : null}</td>
+                        <td>{c.designer ?? '—'}</td>
+                        <td>{c.designer ? (c.accepted ? <Badge tone="good">yes</Badge> : <Badge tone="warn">not yet</Badge>) : '—'}</td>
+                        <td className="num">{c.durationMin === null ? '—' : mins(c.durationMin)}</td>
+                        <td className="num">{inr(c.costInr)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : <div className="empty">No calls in this period.</div>}
+          </Section>
         </div>
-        {rc2.declineReasons.length ? (
-          <p>Top decline reasons: {rc2.declineReasons.map((r) => `${humanise(r.reason)} (${r.count})`).join(', ')}</p>
-        ) : null}
-      </Section>
-
-      <Section title="Designer follow-through" tag="RC3 · named designer, chased until they act">
-        <div className="tiles">
-          <Tile value={rc3.handedOff} label="leads sent to a designer" />
-          <Tile value={mins(rc3.medianWorkingMinutesToAccept)} label={`median working minutes email → Accept (wall clock ${mins(rc3.medianMinutesToAccept)})`} />
-          <Tile value={pct(rc3.acceptedWithin30Share)} label={`accepted within 30 working min (${rc3.acceptedWithin30} of ${rc3.eligibleForWithin30})`} />
-          <Tile value={rc3.escalations} label="escalations to the front desk" />
-          <Tile value={rc3.reassignments} label="reassignments" />
-          <Tile value={`${rc3.outcomesLogged}`} label={`consultation outcomes logged (${rc3.outcomeRequests} requested)`} />
-        </div>
-        {rc3.outcomesLogged ? (
-          <p>Outcomes: {Object.entries(rc3.consultationOutcomes).filter(([, n]) => n).map(([k, n]) => `${humanise(k)} ${n}`).join(' · ')}</p>
-        ) : null}
-      </Section>
-
-      <Section title="Price check" tag="CUT · Vaani never quotes prices (target 0)">
-        <div className="tiles">
-          <Tile value={<span className={cut.flagged.length ? 'bad' : 'ok'}>{cut.flagged.length}</span>} label="calls where the agent may have quoted a price" />
-        </div>
-        {cut.flagged.length ? (
-          <table>
-            <thead><tr><th>When</th><th>Caller</th><th>Flagged agent lines</th></tr></thead>
-            <tbody>
-              {cut.flagged.map((f) => (
-                <tr key={f.callId}>
-                  <td>{formatIst(f.at)}</td>
-                  <td>{f.callerName ?? '—'}<br /><span className="muted">{f.callId}</span></td>
-                  <td>{f.lines.map((l, i) => <div key={i}>&ldquo;{l}&rdquo;</div>)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : null}
-      </Section>
-
-      <Section title="Cost" tag="what the tool costs to run">
-        <div className="tiles">
-          <Tile value={inr(cost.totalInr)} label={`total (Vaani ${inr(cost.vaaniInr)} · Gemini ${inr(cost.geminiInr)})`} />
-          <Tile value={inr(cost.perCall)} label="per call" />
-          <Tile value={inr(cost.perMinute)} label={`per minute (${num(cost.totalMinutes)} min)`} />
-          <Tile value={inr(cost.perBooked)} label={`per booked consultation (${cost.bookedConsultations})`} />
-          <Tile value={inr(cost.perProposal)} label={`per won proposal (${cost.proposals})`} />
-          <Tile value={inr(cost.projectedMonthEnd)} label="projected month-end" />
-          <Tile value={num(cost.creditsRemaining)} label={`Vaani credits remaining (${num(cost.creditsUsedAllTime)} used)`} />
-        </div>
-        {cost.unknownCostCalls ? <p className="muted">{cost.unknownCostCalls} call(s) have no Vaani cost yet; it is retried every minute.</p> : null}
-        {cost.estimatedCostCalls ? (
-          <p className="muted">
-            {cost.estimatedCostCalls} call(s) use an estimated Vaani cost (call length × the per-minute rate in settings), because
-            Vaani&apos;s call-history API is unavailable. Real costs replace the estimates automatically if it recovers.
-          </p>
-        ) : null}
-      </Section>
-
-      <Section title="Needs attention" tag="urgent, incomplete, booking not found, price flags, unaccepted">
-        {m.attention.length ? (
-          <table>
-            <thead><tr><th>When</th><th>Caller</th><th>Number</th><th>Why</th></tr></thead>
-            <tbody>
-              {m.attention.map((a) => (
-                <tr key={a.callId}>
-                  <td>{formatIst(a.at)}</td>
-                  <td>{a.callerName ?? '—'}</td>
-                  <td>{a.number ?? 'pending'}</td>
-                  <td>{a.reasons.map((r, i) => <div key={i}>{r}</div>)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : <p className="ok">Nothing needs attention.</p>}
-      </Section>
-
-      <Section title="All calls" tag={`${m.calls.length} in range`}>
-        <table>
-          <thead><tr><th>When</th><th>Caller</th><th>Locality</th><th>Outcome</th><th>Designer</th><th>Accepted</th><th>Length</th><th>Cost</th></tr></thead>
-          <tbody>
-            {m.calls.map((c) => (
-              <tr key={c.callId}>
-                <td>{formatIst(c.at)}</td>
-                <td>{c.callerName ?? '—'}<br /><span className="muted">{c.number ?? ''}</span></td>
-                <td>{c.locality ?? '—'}</td>
-                <td>{c.outcome ? humanise(c.outcome) : '—'}{c.priceFlag ? <span className="bad"> · price flag</span> : null}</td>
-                <td>{c.designer ?? '—'}</td>
-                <td>{c.designer ? (c.accepted ? <span className="ok">yes</span> : 'not yet') : '—'}</td>
-                <td>{c.durationMin === null ? '—' : mins(c.durationMin)}</td>
-                <td>{inr(c.costInr)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Section>
-    </main>
+      </main>
+    </>
   );
 }

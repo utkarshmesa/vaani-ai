@@ -9,6 +9,8 @@ export const ENV_KEYS = [
   'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY',
   'CRON_SECRET', 'LINK_SIGNING_SECRET', 'DASHBOARD_PASSWORD', 'APP_BASE_URL',
   'MOCK_EXTERNAL',
+  // Not in SPEC §16: "1" opens /dashboard without a password (phone numbers masked).
+  'DASHBOARD_PUBLIC',
 ] as const;
 
 /** Needed only when talking to real services (MOCK_EXTERNAL unset). */
@@ -37,11 +39,15 @@ const schema = z
     SUPABASE_SERVICE_ROLE_KEY: optional,
     CRON_SECRET: required,
     LINK_SIGNING_SECRET: z.string().min(16, 'must be at least 16 characters'),
-    DASHBOARD_PASSWORD: required,
+    DASHBOARD_PASSWORD: optional,
     APP_BASE_URL: z.string().trim().url(),
     MOCK_EXTERNAL: z.string().optional(),
+    DASHBOARD_PUBLIC: z.string().optional(),
   })
   .superRefine((v, ctx) => {
+    if (v.DASHBOARD_PUBLIC !== '1' && !v.DASHBOARD_PASSWORD) {
+      ctx.addIssue({ code: 'custom', path: ['DASHBOARD_PASSWORD'], message: 'required unless DASHBOARD_PUBLIC=1' });
+    }
     if (v.MOCK_EXTERNAL === '1') return;
     for (const k of EXTERNAL_KEYS) {
       if (!v[k]) ctx.addIssue({ code: 'custom', path: [k], message: 'required when MOCK_EXTERNAL is not 1' });
@@ -50,6 +56,7 @@ const schema = z
   .transform((v) => ({
     ...v,
     MOCK_EXTERNAL: v.MOCK_EXTERNAL === '1',
+    DASHBOARD_PUBLIC: v.DASHBOARD_PUBLIC === '1',
     CALCOM_EVENT_TYPE_ID: v.CALCOM_EVENT_TYPE_ID ? Number(v.CALCOM_EVENT_TYPE_ID) : 0,
     GEMINI_MODEL: v.GEMINI_MODEL ?? 'mock-gemini',
     APP_BASE_URL: v.APP_BASE_URL.replace(/\/+$/, ''),
