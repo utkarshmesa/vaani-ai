@@ -286,6 +286,6 @@ Defaults I'll use unless you say otherwise: Q3 → (b) retry the call-history lo
 15. **Redacted qualified.md for the Vaani KB and Gemini (NOTES P1).** OK to create `Docs/qualified.kb.md`, with the example budget figure replaced by words, and change the §19 manual step to upload that file instead of the original?
 
 ### Additions to the file list from the source review
-- CP2: `lib/redact.ts` (`redactMoneyInUserLines(transcript)`), tested alongside `priceScan`
+- CP2: ~~`lib/redact.ts`~~ dropped per D1 (the caller's own budget may reach the brief). `lib/crypto.ts` (`safeEqual`) added for webhook, cron and link secret comparisons.
 - CP4: `lib/brief/qualified.ts` (redacted rubric text) and `Docs/qualified.kb.md` (same text, for the KB upload). A test asserts both pass `priceScan`.
 - CP3 fixtures use the transcript details in NOTES §6.3 (names, localities, sizes, scopes). Agent lines follow VAANI_AGENT.md and contain no ratios or figures.
