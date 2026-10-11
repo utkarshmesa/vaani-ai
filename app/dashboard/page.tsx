@@ -1,5 +1,5 @@
 import { requireDashboardAccess, showPhone } from '@/lib/dashboard/access';
-import type { Insights } from '@/lib/dashboard/insights';
+import { MIN_GROUP_TO_COMPARE, type Insights } from '@/lib/dashboard/insights';
 import { loadDashboard } from '@/lib/dashboard/load';
 import type { AttentionItem, Metrics } from '@/lib/dashboard/metrics';
 import { parseRange } from '@/lib/dashboard/range';
@@ -113,16 +113,20 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     <div className="big pending">Too early to tell</div>
                     <p className="lede">
                       {r48.pending
-                        ? <>{r48.pending} good-fit {r48.pending === 1 ? 'enquiry is' : 'enquiries are'} still inside the 48 hours. The first result shows once a 48-hour window closes.</>
-                        : <>No good-fit enquiries in this period yet.</>}
+                        ? <>{r48.pending} new {r48.pending === 1 ? 'enquiry is' : 'enquiries are'} still inside the 48 hours. The first result shows once a 48-hour window closes.</>
+                        : <>No new enquiries in this period yet.</>}
                     </p>
                   </>
                 ) : (
                   <>
                     <div className={`big${r48.share < r48.baseline ? ' bad' : ''}`}>{pct(r48.share)}</div>
                     <p className="lede">
-                      of good-fit enquiries were taken on by a named designer within 48 hours ({r48.within} of {r48.resolved}).
+                      of new enquiries got a real answer within 48 hours ({r48.within} of {r48.resolved}).
                       {r48.pending ? <> {r48.pending} more {r48.pending === 1 ? 'is' : 'are'} still inside the 48 hours.</> : null}
+                    </p>
+                    <p className="public-note" style={{ margin: '6px 0 0' }}>
+                      {r48.acceptedInTime} accepted by their designer in time · {r48.declinedOnCall} told honestly on the call it isn&apos;t a fit
+                      {r48.droppedUnanswered ? <> · {r48.droppedUnanswered} dropped call{r48.droppedUnanswered === 1 ? '' : 's'} counted as unanswered (front-desk call-backs aren&apos;t recorded)</> : null}
                     </p>
                   </>
                 )}
@@ -134,7 +138,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <div className="compare">
                 <CompareBar label="With Vaani" value={r48.share} now />
                 <CompareBar label="Before" value={r48.baseline} />
-                <div className="public-note">Before: about 48% of ~200 monthly enquiries got no response within 48 hours.</div>
+                <div className="public-note">Before: about 48% of ~200 monthly enquiries got no response within 48 hours. Both figures count every new enquiry.</div>
               </div>
             </div>
           </section>
@@ -211,11 +215,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     <strong>{pq.askers.asked}</strong> caller{pq.askers.asked === 1 ? '' : 's'} asked about price.{' '}
                     <strong>{pq.askers.converted}</strong> still booked a consultation or asked for a callback ({pq.askersBooked} booked).
                   </p>
-                  <div className="compare">
-                    <CompareBar label="Asked price" value={pq.askers.share} now />
-                    <CompareBar label="Didn't ask" value={pq.others.share} />
-                  </div>
-                  <div className="public-note" style={{ marginTop: 6 }}>Share of new enquiries that became a booking or callback.</div>
+                  {pq.comparable ? (
+                    <>
+                      <div className="compare">
+                        <CompareBar label={`Asked (${pq.askers.asked})`} value={pq.askers.share} now />
+                        <CompareBar label={`Didn't (${pq.others.asked})`} value={pq.others.share} />
+                      </div>
+                      <div className="public-note" style={{ marginTop: 6 }}>
+                        Share of new enquiries that became a booking or callback. Callers who ask about price may simply be keener, so read this
+                        as &ldquo;refusing to quote did not put them off&rdquo;, not as cause and effect.
+                      </div>
+                    </>
+                  ) : (
+                    <div className="public-note">
+                      Too few calls to compare booking rates yet ({pq.askers.asked} asked, {pq.others.asked} didn&apos;t; needs {MIN_GROUP_TO_COMPARE} in each).
+                    </div>
+                  )}
                 </>
               ) : <p className="public-note" style={{ marginTop: 0 }}>No caller asked about price in this period.</p>}
               <div style={{ marginTop: 14 }}>
@@ -278,7 +293,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
               <div className="stat"><div className="n">{inr(cost.perBooked)}</div><div className="l">per booked consultation ({cost.bookedConsultations})</div></div>
               <div className="stat"><div className="n">{inr(cost.perProposal)}</div><div className="l">per proposal sent ({cost.proposals})</div></div>
               <div className="stat"><div className="n">{inr(cost.totalInr)}</div><div className="l">spent in this period</div></div>
-              <div className="stat"><div className="n">{inr(cost.projectedMonthEnd)}</div><div className="l">projected for the month</div></div>
+              <div className="stat"><div className="n">{inr(cost.projectedMonthEnd)}</div><div className="l">{m.range.isCurrentMonth && cost.projectedMonthEnd === null ? 'projected for the month (after the first week)' : 'projected for the month'}</div></div>
             </div>
             {cost.estimatedCostCalls ? (
               <p className="public-note">

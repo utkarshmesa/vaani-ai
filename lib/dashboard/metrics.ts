@@ -96,6 +96,9 @@ export interface MetricsInput {
   hiddenTestCalls?: number;
 }
 
+/** Days of the month that must pass before the month-end cost projection is shown. */
+export const MIN_DAYS_TO_PROJECT = 7;
+
 const ratio = (a: number, b: number) => (b > 0 ? a / b : null);
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
 
@@ -151,7 +154,8 @@ export function computeMetrics(input: MetricsInput): Metrics {
   let projectedMonthEnd: number | null = null;
   if (range.isCurrentMonth) {
     const elapsed = Math.min(input.now.getTime(), range.to.getTime()) - range.from.getTime();
-    if (elapsed > 0) projectedMonthEnd = totalInr * ((range.to.getTime() - range.from.getTime()) / elapsed);
+    // Extrapolating from the first few days multiplies one busy day by 30; wait for a week of data.
+    if (elapsed >= MIN_DAYS_TO_PROJECT * 86_400_000) projectedMonthEnd = totalInr * ((range.to.getTime() - range.from.getTime()) / elapsed);
   }
 
   // Needs attention

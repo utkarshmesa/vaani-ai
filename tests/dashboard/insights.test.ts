@@ -54,11 +54,14 @@ describe('callerAskedAboutPrice', () => {
 });
 
 describe('founder insights over the fixture set', () => {
-  it('has the leak stopped: good-fit enquiries accepted within 48 hours vs the baseline', async () => {
+  it('has the leak stopped: every new enquiry answered within 48 hours, on the same footing as the baseline', async () => {
     await seedSeptember();
     const { insights } = await loadDashboard(parseRange(SEPT));
-    // fit = t01, t13 (accepted in minutes) and price_leak (never accepted, call > 48 h ago)
-    expect(insights.response48h).toEqual({ within: 2, resolved: 3, pending: 0, share: 2 / 3, baseline: BASELINE_RESPONSE_48H });
+    // new = t01, t13 (accepted in minutes), t10 (declined honestly on the call), price_leak (never accepted), t17 (dropped)
+    expect(insights.response48h).toEqual({
+      within: 3, resolved: 5, pending: 0, share: 3 / 5, baseline: BASELINE_RESPONSE_48H,
+      acceptedInTime: 2, declinedOnCall: 1, droppedUnanswered: 1,
+    });
   });
 
   it('counts an unaccepted lead younger than 48 hours as pending, not lost', async () => {
@@ -104,6 +107,7 @@ describe('founder insights over the fixture set', () => {
       askers: { asked: 2, converted: 2, share: 1 },
       others: { asked: 3, converted: 1, share: 1 / 3 },
       askersBooked: 1,
+      comparable: false, // 2 and 3 callers: too few to draw a comparison
     });
   });
 

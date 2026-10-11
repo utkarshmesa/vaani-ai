@@ -54,15 +54,26 @@ export interface DesignerStat {
 
 export interface PriceOutcome { asked: number; converted: number; share: number | null }
 
+/** Below this many callers in either group, a booking-rate comparison is noise, so the page does not draw one. */
+export const MIN_GROUP_TO_COMPARE = 10;
+
 export interface Insights {
-  response48h: { within: number; resolved: number; pending: number; share: number | null; baseline: number };
+  /**
+   * Like the baseline ("got a response within 48 hours"), over every new enquiry: an honest decline from Vaani is an
+   * answer on the call; a good-fit enquiry is answered when its designer accepts; a dropped call counts as unanswered
+   * (the front desk is emailed, but whether they called back is not recorded).
+   */
+  response48h: {
+    within: number; resolved: number; pending: number; share: number | null; baseline: number;
+    declinedOnCall: number; acceptedInTime: number; droppedUnanswered: number;
+  };
   funnel: FunnelStep[];
   declineReasons: { reason: string; count: number }[];
   outcomeLoggedShare: number | null;
   afterHours: { calls: number; newEnquiries: number; handedOff: number; booked: number };
   /** [ISO weekday 1–7 (Mon–Sun)][3-hour bucket 0–7] → calls, IST */
   heatmap: number[][];
-  priceQuestions: { askers: PriceOutcome; others: PriceOutcome; askersBooked: number };
+  priceQuestions: { askers: PriceOutcome; others: PriceOutcome; askersBooked: number; comparable: boolean };
   designers: DesignerStat[];
 }
 
@@ -121,12 +132,14 @@ export function computeInsights(input: InsightsInput): Insights {
   const reasons = new Map<string, number>();
   for (const l of captured) if (l.outcome === 'declined') reasons.set(l.decline_reason ?? 'other', (reasons.get(l.decline_reason ?? 'other') ?? 0) + 1);
 
-  // Has the leak stopped? Good-fit enquiries a designer took on within 48 hours of the call.
-  let within = 0; let resolved = 0; let pending = 0;
-  for (const l of fit) {
+  // Has the leak stopped? Every new enquiry, answered within 48 hours of the call (see Insights.response48h).
+  let within = 0; let resolved = 0; let pending = 0; let acceptedInTime = 0; let droppedUnanswered = 0;
+  const declinedOnCall = captured.length - fit.length;
+  for (const l of newEnq) {
     const start = receivedAt(l);
-    if (l.accepted_at && Date.parse(l.accepted_at) - start <= H48) { within++; resolved++; } else if (now.getTime() - start >= H48) resolved++;
-    else pending++;
+    if (l.outcome === 'declined') { within++; resolved++; continue; }
+    if (l.outcome !== 'incomplete' && l.accepted_at && Date.parse(l.accepted_at) - start <= H48) { within++; resolved++; acceptedInTime++; continue; }
+    if (now.getTime() - start >= H48) { resolved++; if (l.outcome === 'incomplete') droppedUnanswered++; } else pending++;
   }
 
   // Calls the studio would have missed
@@ -139,7 +152,8 @@ export function computeInsights(input: InsightsInput): Insights {
 
   // Did refusing to quote cost bookings?
   const askers = newEnq.filter((l) => callerAskedAboutPrice(callById.get(l.call_id)?.transcript));
-  const others = newEnq.filter((l) => !askers.includes(l));
+  const askerSet = new Set(askers);
+  const others = newEnq.filter((l) => !askerSet.has(l));
   const outcome = (xs: LeadRow[]): PriceOutcome => {
     const n = xs.filter(converted).length;
     return { asked: xs.length, converted: n, share: ratio(n, xs.length) };
@@ -182,7 +196,7 @@ export function computeInsights(input: InsightsInput): Insights {
     .sort((a, b) => b.leads - a.leads || a.name.localeCompare(b.name));
 
   return {
-    response48h: { within, resolved, pending, share: ratio(within, resolved), baseline: BASELINE_RESPONSE_48H },
+    response48h: { within, resolved, pending, share: ratio(within, resolved), baseline: BASELINE_RESPONSE_48H, declinedOnCall, acceptedInTime, droppedUnanswered },
     funnel,
     declineReasons: [...reasons].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count || a.reason.localeCompare(b.reason)),
     outcomeLoggedShare: ratio(accepted.filter((l) => l.consultation_outcome).length, accepted.length),
@@ -193,7 +207,10 @@ export function computeInsights(input: InsightsInput): Insights {
       booked: handed.filter((l) => closed(l) && l.booking_confirmed).length,
     },
     heatmap,
-    priceQuestions: { askers: outcome(askers), others: outcome(others), askersBooked: askers.filter((l) => l.booking_confirmed).length },
+    priceQuestions: {
+      askers: outcome(askers), others: outcome(others), askersBooked: askers.filter((l) => l.booking_confirmed).length,
+      comparable: askers.length >= MIN_GROUP_TO_COMPARE && others.length >= MIN_GROUP_TO_COMPARE,
+    },
     designers,
   };
 }
